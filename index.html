@@ -2057,6 +2057,28 @@
               </div>
             </div>
 
+            <div class="exec-panel-well" id="exec-mosca-card">
+              <div class="exec-card-kicker">
+                <span>MOSCA'S INEQUALITY (X + Y &gt; Z)</span>
+                <span class="mono" style="color:var(--ink-dim)">Dr. Michele Mosca</span>
+              </div>
+              <div style="font-size:13px;color:var(--ink-secondary);line-height:1.45;margin-bottom:10px">
+                If secrecy shelf-life (<strong>X</strong>) + migration time (<strong>Y</strong>) &gt; years to quantum break (<strong>Z</strong>), Harvest-Now-Decrypt-Later risk requires acting <strong>now</strong>.
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px">
+                <label style="font-size:13px;font-weight:600;color:var(--ink-primary)">X · Secrecy (y)
+                  <input id="hero-mosca-x" type="number" min="0" max="40" value="7" style="width:100%;margin-top:4px;min-block-size:40px;padding:6px 8px;font-size:16px;border:1px solid var(--hairline-strong);border-radius:8px;background:#FFFFFF;color:var(--ink-bright)">
+                </label>
+                <label style="font-size:13px;font-weight:600;color:var(--ink-primary)">Y · Migrate (y)
+                  <input id="hero-mosca-y" type="number" min="1" max="20" value="3" style="width:100%;margin-top:4px;min-block-size:40px;padding:6px 8px;font-size:16px;border:1px solid var(--hairline-strong);border-radius:8px;background:#FFFFFF;color:var(--ink-bright)">
+                </label>
+                <label style="font-size:13px;font-weight:600;color:var(--ink-primary)">Z · Quantum (y)
+                  <input id="hero-mosca-z" type="number" min="1" max="25" value="9" style="width:100%;margin-top:4px;min-block-size:40px;padding:6px 8px;font-size:16px;border:1px solid var(--hairline-strong);border-radius:8px;background:#FFFFFF;color:var(--ink-bright)">
+                </label>
+              </div>
+              <div id="hero-mosca-verdict" class="status-chip st-gap" style="width:100%;justify-content:flex-start;padding:8px 10px;font-size:13px"></div>
+            </div>
+
             <div class="exec-panel-well">
               <div style="font-size:13px;color:var(--ink-secondary);line-height:1.5">
                 <strong style="color:var(--ink-bright)">Assessment Scope Notice:</strong> Point-in-time read-only cryptographic observation — <strong>not a compliance certification</strong>. Executive Order 14412 and OMB M-26-15 bind federal civilian agencies, not private companies directly; commercial environments are assessed against the federal benchmark.
@@ -4648,8 +4670,11 @@
         '<h2 style="font-size:24px;margin:6px 0">' + esc(docHeading) + '</h2>' +
         '<div style="font-size:13.5px;color:#475569">Assessed Subject: <strong>' + esc(v.subjectTitle) + '</strong> · Run: <span class="mono">' + esc(v.run.runId || v.ev.runId) + '</span> · Date: ' + esc(v.ev.referenceDateIso || "2026-11-23") + '</div>' +
       '</div>' +
-      '<div style="padding:12px 14px;border-radius:10px;background:#F0F9FF;border:1px solid #BAE6FD;font-size:13px;color:#0F172A">' +
+      '<div style="padding:12px 14px;border-radius:10px;background:#F0F9FF;border:1px solid #BAE6FD;font-size:13px;color:#0F172A;margin-bottom:10px">' +
         '<strong>Honest Assessment Scope:</strong> Point-in-time read-only cryptographic observation — <strong>not a compliance certification</strong>. Executive Order 14412 and OMB M-26-15 bind federal civilian agencies; commercial targets are assessed against the federal benchmark.' +
+      '</div>' +
+      '<div style="padding:12px 14px;border-radius:10px;background:#F8FAFC;border:1px solid #CBD5E1;font-size:13px;color:#0F172A">' +
+        '<strong>Mosca&rsquo;s Inequality (Dr. Michele Mosca — X + Y &gt; Z):</strong> When data secrecy shelf-life (<strong>X</strong>) plus PQC migration duration (<strong>Y</strong>) exceeds years until cryptanalytically relevant quantum computing (<strong>Z</strong>), Harvest-Now-Decrypt-Later exposure requires immediate key-establishment remediation. QED evaluates <strong>X + Y &gt; Z</strong> for confidentiality, <strong>Y &gt; Z</strong> for live handshake authentication, and <strong>L + Y &gt; Z</strong> for long-lived firmware/root signatures.' +
       '</div>' +
       '<div class="paper-score-grid">' +
         '<div class="paper-score-box">' +
@@ -5436,6 +5461,30 @@
     }
     executeThreadCopy(document.getElementById("btn-copy-thread-reply"), threadCompiledEl);
   });
+
+  function syncHeroMoscaCalculator() {
+    const mxEl = document.getElementById("hero-mosca-x");
+    const myEl = document.getElementById("hero-mosca-y");
+    const mzEl = document.getElementById("hero-mosca-z");
+    const mvEl = document.getElementById("hero-mosca-verdict");
+    if (!mxEl || !myEl || !mzEl || !mvEl) return;
+    const x = Math.max(0, parseInt(mxEl.value || "0", 10) || 0);
+    const y = Math.max(0, parseInt(myEl.value || "0", 10) || 0);
+    const z = Math.max(1, parseInt(mzEl.value || "1", 10) || 1);
+    const sum = x + y;
+    if (sum > z) {
+      mvEl.className = "status-chip st-gap";
+      mvEl.innerHTML = glyphInlineSVG("Gap") + " <span><strong>ACT NOW:</strong> X(" + x + "y) + Y(" + y + "y) = " + sum + "y &gt; Z(" + z + "y) · Overdue by " + (sum - z) + "y</span>";
+    } else {
+      mvEl.className = "status-chip st-ready";
+      mvEl.innerHTML = glyphInlineSVG("Ready") + " <span><strong>WITHIN WINDOW:</strong> X(" + x + "y) + Y(" + y + "y) = " + sum + "y &lt;= Z(" + z + "y) · Margin +" + (z - sum) + "y</span>";
+    }
+  }
+  ["hero-mosca-x", "hero-mosca-y", "hero-mosca-z"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", syncHeroMoscaCalculator);
+  });
+  syncHeroMoscaCalculator();
 
   loadSnapshot("");
 })();
