@@ -3046,7 +3046,12 @@
     rect(44, y - 34, 524, 38, 0.941, 0.976, 1.0, 0.729, 0.902, 0.992);
     txt("F1", 8.8, 54, y - 10, 0.059, 0.09, 0.165, "Point-in-time read-only cryptographic observation - NOT a compliance certification.");
     txt("F1", 8.8, 54, y - 23, 0.2, 0.255, 0.333, "EO 14412 and OMB M-26-15 bind federal civilian agencies; commercial targets are assessed against the federal benchmark.");
-    y -= 50;
+    y -= 44;
+
+    rect(44, y - 36, 524, 38, 0.973, 0.98, 0.988, 0.796, 0.835, 0.882);
+    txt("F2", 8.5, 54, y - 10, 0.059, 0.09, 0.165, "Mosca's Inequality (Dr. Michele Mosca - X + Y > Z) & Shor / Grover Quantum Physics:");
+    txt("F1", 8.3, 54, y - 23, 0.2, 0.255, 0.333, "Shor's algorithm breaks RSA/ECDHE/ECDSA (NIST Level 0); Grover's halves symmetric search (AES-256 retains NIST Level 5).");
+    y -= 48;
 
     rect(44, y - 68, 255, 68, 0.973, 0.98, 0.988, 0.886, 0.91, 0.941);
     txt("F2", 9, 54, y - 15, 0.278, 0.333, 0.412, "FEDERAL BENCHMARK");
@@ -3118,28 +3123,40 @@
   }
 
   /* Offline-Resilient Synthesis for Standalone Artifact Mode */
-  async function buildOfflineAssessSnapshot(host) {
+  async function buildOfflineAssessSnapshot(host, handoverMeta) {
     const base = JSON.parse(JSON.stringify(OFFLINE_SEED_SNAPSHOT));
     const cleanHost = String(host || "www.qedynamics.io").toLowerCase().trim();
-    const runId = "live-web-" + cleanHost.replace(/[^a-z0-9]/g, "-");
+    const slug = cleanHost.replace(/[^a-z0-9]/g, "-");
+    const runId = (handoverMeta ? "handover-" : "live-web-") + slug;
+    base.browserEdgePreview = true;
     base.run.runId = runId;
     base.evaluation.runId = runId;
+    base.evaluation.rulePackVersion = "2.2.0";
     base.evaluation.clientName = cleanHost;
     base.availableRuns = [runId].concat((base.availableRuns || []).filter(r => r !== runId));
 
-    let liveIp = "Public Edge Verified";
+    let liveIp = handoverMeta ? ("Zero-Secret Handover (" + handoverMeta.kind + ")") : "Public Edge Heuristic";
     let cnameChain = "";
+    let caaIssuer = "";
     let isCloudflare = false;
     let isOtherCdn = false;
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 2200);
-      const dohRes = await fetch("https://cloudflare-dns.com/dns-query?name=" + encodeURIComponent(cleanHost) + "&type=A", {
-        headers: { "Accept": "application/dns-json" },
-        signal: ctrl.signal
-      });
+      const [dohRes, caaRes] = await Promise.all([
+        fetch("https://cloudflare-dns.com/dns-query?name=" + encodeURIComponent(cleanHost) + "&type=A", { headers: { "Accept": "application/dns-json" }, signal: ctrl.signal }),
+        fetch("https://cloudflare-dns.com/dns-query?name=" + encodeURIComponent(cleanHost) + "&type=CAA", { headers: { "Accept": "application/dns-json" }, signal: ctrl.signal }).catch(() => null)
+      ]);
       clearTimeout(timer);
-      if (dohRes.ok) {
+      if (caaRes && caaRes.ok) {
+        const caaJson = await caaRes.json();
+        const issueRec = ((caaJson && caaJson.Answer) || []).find(a => a.type === 257 && /issue/i.test(String(a.data || "")));
+        if (issueRec) {
+          const m = String(issueRec.data || "").match(/"([^"]+)"/);
+          if (m && m[1]) caaIssuer = m[1];
+        }
+      }
+      if (!handoverMeta && dohRes && dohRes.ok) {
         const doh = await dohRes.json();
         if (doh && doh.Status === 3) {
           return { errorNxdomain: "DNS resolution returned NXDOMAIN for " + cleanHost + ". Check the domain spelling." };
@@ -3156,50 +3173,143 @@
 
     const existingMatch = (base.evaluation.findings || []).some(f => matchesTargetHost(f, cleanHost));
     if (!existingMatch) {
+      const targetId = "tls-" + slug;
       const negGroup = isCloudflare ? "X25519MLKEM768" : "X25519";
+      const groupCode = isCloudflare ? "0x11EC (4588)" : "0x001D (29)";
+      const issuerLabel = caaIssuer ? ("CAA Authorized: " + caaIssuer) : (isCloudflare ? "Cloudflare Edge PKI" : "Public CA (DoH Heuristic)");
       const sampleObs = {
-        targetId: "tls-" + cleanHost.replace(/[^a-z0-9]/g, "-"),
+        targetId: targetId,
         host: cleanHost,
         port: 443,
-        resolvedIp: liveIp + (isCloudflare ? " (Cloudflare Edge)" : isOtherCdn ? " (CDN Edge)" : ""),
+        resolvedIp: liveIp + (isCloudflare ? " · Cloudflare DoH Edge" : isOtherCdn ? " · CDN DoH Edge" : " · DNS/Edge Preview"),
         status: "assessed",
-        negotiatedVersion: "TLS 1.3",
-        negotiatedGroup: negGroup,
-        negotiatedCipher: "TLS_AES_256_GCM_SHA384",
-        supportedVersions: ["TLS 1.3", "TLS 1.2"],
-        negotiatedGroups: [{ ianaName: negGroup }],
+        negotiatedVersion: "TLS 1.3 (Heuristic — run QRA CLI for raw socket)",
+        negotiatedGroup: negGroup + " [" + groupCode + "]",
+        negotiatedCipher: "AEAD Bulk Cipher (Heuristic)",
+        supportedVersions: ["TLS 1.3"],
+        negotiatedGroups: [{ ianaName: negGroup, groupId: groupCode }],
         acceptedCipherSuites: [{ ianaName: "TLS_AES_256_GCM_SHA384" }],
-        certificates: [{ subjectCn: cleanHost, issuerCn: isCloudflare ? "Cloudflare Edge CA" : "Public Trust CA", pubKeyAlgName: "ECDSA P-256", notAfterUtc: "2027-03-15" }]
+        certificates: [{ subjectCn: cleanHost, issuerCn: issuerLabel, pubKeyAlgName: "Classical RSA/ECDSA (NIST Level 0 under Shor)", notAfterUtc: "ACME Rotation" }]
       };
       base.run.tlsObservations = [sampleObs].concat(base.run.tlsObservations || []);
 
-      const commonFindings = [
-        { findingId: "f-cert-" + cleanHost, ruleId: "QRA-CERT-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Certificates", verdict: "Depends on a supplier", ownerKind: "supplier", title: "X.509 certificate quantum resistance", summaryShort: "Public CA classical X.509 chain", detail: "Publicly trusted X.509 certificate chain uses classical signatures while CA/Browser Forum ML-DSA root transition is pending.", remediation: "Maintain automated ACME short-lived certificate renewal and track CA/Browser Forum post-quantum issuance.", exposureClass: "internet-facing", policyStatus: "supplier-blocked", mosca: { urgency: 58, impact: 65, marginYears: 5 }, citations: [{ document: "NIST IR 8547", clause: "Sec. 4", status: "FINAL", binds: "Federal transition benchmark" }] },
-        { findingId: "f-proto-" + cleanHost, ruleId: "QRA-PROTO-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Protocols", verdict: "Ready", ownerKind: "operator", title: "TLS 1.3 protocol negotiation", summaryShort: "TLS 1.3 negotiated", detail: "TLS 1.3 is negotiated on port 443 (" + liveIp + ") with legacy TLS 1.0/1.1 disabled.", remediation: "Keep TLS 1.0 and TLS 1.1 disabled across all listeners.", exposureClass: "internet-facing", policyStatus: "aligned", mosca: { urgency: 15, impact: 45, marginYears: 9 }, citations: [{ document: "OMB M-26-15", clause: "Sec. 3", status: "FINAL", binds: "Federal civilian agencies" }] },
-        { findingId: "f-ciph-" + cleanHost, ruleId: "QRA-CIPH-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Cipher suites", verdict: "Ready", ownerKind: "operator", title: "Forward-secret AEAD cipher suites", summaryShort: "AEAD PFS suites only", detail: "Endpoint enforces forward-secret AEAD cipher suites with zero static RSA key transport.", remediation: "No immediate cipher suite changes required.", exposureClass: "internet-facing", policyStatus: "aligned", mosca: { urgency: 10, impact: 45, marginYears: 9 }, citations: [{ document: "NIST SP 800-52 Rev. 2", clause: "Sec. 3.3", status: "FINAL", binds: "Federal agencies" }] },
-        { findingId: "f-sym-" + cleanHost, ruleId: "QRA-SYM-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Symmetric", verdict: "Ready", ownerKind: "operator", title: "256-bit symmetric bulk encryption", summaryShort: "AES-256-GCM active", detail: "256-bit AEAD bulk encryption satisfies both Federal Benchmark and NSA CNSA 2.0 symmetric key strength.", remediation: "Maintain 256-bit AEAD preference.", exposureClass: "internet-facing", policyStatus: "aligned", mosca: { urgency: 10, impact: 40, marginYears: 12 }, citations: [{ document: "NSA CNSA 2.0 FAQ v2.2", clause: "AES-256", status: "FINAL", binds: "National Security Systems" }] }
-      ];
+      const certFinding = {
+        findingId: "f-cert-" + slug, ruleId: "QRA-CERT-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Certificates", verdict: "Depends on a supplier", ownerKind: "supplier",
+        title: "X.509 certificate quantum resistance (Shor's Algorithm vs. Live Auth)", summaryShort: "Public CA classical X.509 (" + issuerLabel + ")",
+        detail: "Classical RSA/ECDSA/Ed25519 signatures drop to NIST Quantum Security Level 0 against Shor's polynomial-time discrete-log/factoring algorithm, while public CA/B Forum ML-DSA (FIPS 204) roots are pending. Under QED's LiveAuth formula (L = 0 => MoscaSum = Y), ephemeral handshake authentication cannot be forged retroactively.",
+        remediation: "Enforce ACME 47-90 day automated certificate renewal and prepare trust stores for FIPS 204 ML-DSA-65/87.",
+        cutoverGuardrail: "Do not deploy non-CA/B-Forum ML-DSA leaf certificates on public browsers before root program inclusion.",
+        exposureClass: "quantum-vulnerable", policyStatus: "supplier-blocked",
+        mosca: { urgency: 45, impact: 65, marginYears: 6, margin2030Years: 1, margin2035Years: 6, margin2040Years: 11, confidentialityYears: 0, migrationYears: 3, formulaTrace: "LiveAuth(L=0): MoscaSum = Y(3y) <= Z_2035(9y) => Margin +6y (Supplier CA gated)" },
+        citations: [{ document: "NIST FIPS 204", clause: "ML-DSA", status: "FINAL", binds: "Federal signature standard" }, { document: "NIST IR 8547", clause: "Sec. 4", status: "FINAL", binds: "Federal transition benchmark" }]
+      };
+      const protoFinding = {
+        findingId: "f-proto-" + slug, ruleId: "QRA-PROTO-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Protocols", verdict: "Ready", ownerKind: "operator",
+        title: "TLS 1.3 transport baseline (RFC 8446)", summaryShort: "TLS 1.3 extension carrier ready",
+        detail: "TLS 1.3 (" + liveIp + ") removes static RSA key transport and carries hybrid FIPS 203 ML-KEM key shares.",
+        remediation: "Keep TLS 1.0/1.1 disabled across all edge and origin listeners.", exposureClass: "post-quantum", policyStatus: "aligned",
+        mosca: { urgency: 15, impact: 45, marginYears: 9, margin2030Years: 4, margin2035Years: 9, margin2040Years: 14, confidentialityYears: 0, migrationYears: 1, formulaTrace: "TLS 1.3 RFC 8446 carrier => Ready" },
+        citations: [{ document: "OMB M-26-15", clause: "Sec. 3", status: "FINAL", binds: "FCEB agencies" }]
+      };
+      const ciphFinding = {
+        findingId: "f-ciph-" + slug, ruleId: "QRA-CIPH-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Cipher suites", verdict: "Ready", ownerKind: "operator",
+        title: "Forward-secret AEAD cipher suite posture", summaryShort: "AEAD ephemeral suites",
+        detail: "Forward-secret AEAD suites isolate bulk record encryption from static long-term certificate keys.",
+        remediation: "Verify raw cipher suite order via QRA CLI/VPC probe.", exposureClass: "grover-resistant", policyStatus: "aligned",
+        mosca: { urgency: 10, impact: 45, marginYears: 9, margin2030Years: 4, margin2035Years: 9, margin2040Years: 14, confidentialityYears: 7, migrationYears: 1, formulaTrace: "AEAD PFS => Ready" },
+        citations: [{ document: "NIST SP 800-52 Rev. 2", clause: "Sec. 3.3", status: "FINAL", binds: "Federal agencies" }]
+      };
+      const symFinding = {
+        findingId: "f-sym-" + slug, ruleId: "QRA-SYM-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Symmetric", verdict: "Ready", ownerKind: "operator",
+        title: "Symmetric & hash resistance to Grover's O(2^(k/2)) quantum search", summaryShort: "AES-256 (Level 5) / AES-128 (Level 1 Fed)",
+        detail: "Grover's quadratic amplitude amplification halves symmetric search bit-strength rather than breaking it exponentially: AES-128 retains NIST Level 1 (accepted under Federal Benchmark), while NSA CNSA 2.0 mandates AES-256 (NIST Level 5) and SHA-384/512.",
+        remediation: "Prefer TLS_AES_256_GCM_SHA384 for CNSA 2.0 alignment.", exposureClass: "grover-resistant", policyStatus: "aligned",
+        mosca: { urgency: 10, impact: 40, marginYears: 12, margin2030Years: 7, margin2035Years: 12, margin2040Years: 17, confidentialityYears: 7, migrationYears: 1, formulaTrace: "Grover O(2^128) bound => NIST Level 5 Ready" },
+        citations: [{ document: "NSA CNSA 2.0 FAQ v2.2", clause: "AES-256 / SHA-384", status: "FINAL", binds: "National Security Systems" }]
+      };
+
+      const commonFindings = [certFinding, protoFinding, ciphFinding, symFinding];
       if (isCloudflare || isOtherCdn) {
         commonFindings.unshift({
-          findingId: "f-net-" + cleanHost, ruleId: "QRA-NET-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Protocols", verdict: "Note", ownerKind: "operator",
-          title: "CDN / Reverse-Proxy Split-TLS Origin Boundary", summaryShort: "External scan verifies Leg 1 (Client -> Edge) only",
-          detail: "Resolved IP " + liveIp + (cnameChain ? (" (" + cnameChain + ")") : "") + " terminates at a CDN/anycast edge. Outside observation verifies Leg 1 (Client -> Edge) only; Leg 2 (CDN -> Origin Server) requires internal/cloud verification.",
-          remediation: "Verify origin-pull TLS 1.3 and hybrid ML-KEM configuration on Leg 2 via QRA Cloud/Host handover.", exposureClass: "internet-facing", policyStatus: "note", mosca: { urgency: 30, impact: 55, marginYears: 6 },
+          findingId: "f-net-" + slug, ruleId: "QRA-NET-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Protocols", verdict: "Note", ownerKind: "operator",
+          title: "CDN / Reverse-Proxy Split-TLS Origin Boundary", summaryShort: "Browser DoH observes Leg 1 (Client -> Edge) only",
+          detail: "Live DNS resolved " + liveIp + (cnameChain ? (" (" + cnameChain + ")") : "") + " to an anycast CDN edge. Browser DoH assesses Leg 1 edge routing only; Leg 2 (CDN -> Origin Server) and raw TCP SupportedGroups require QRA Go/Cloud Engine verification.",
+          remediation: "Verify origin-pull TLS 1.3 and hybrid ML-KEM on Leg 2 via QRA Cloud/Host handover.", exposureClass: "quantum-vulnerable", policyStatus: "note",
+          mosca: { urgency: 30, impact: 55, marginYears: 6, margin2030Years: 1, margin2035Years: 6, margin2040Years: 11, confidentialityYears: 7, migrationYears: 2, formulaTrace: "Split-TLS Leg 2 unverified externally => VerdictNote" },
           citations: [{ document: "OMB M-26-15", clause: "Sec. 3", status: "FINAL", binds: "FCEB agencies" }, { document: "NIST SP 800-52 Rev. 2", clause: "Sec. 1.2", status: "FINAL", binds: "Federal agencies" }]
         });
       }
       const fedKex = isCloudflare
-        ? { findingId: "f-kex-" + cleanHost, ruleId: "QRA-KEX-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Note", ownerKind: "operator", title: "Hybrid post-quantum key establishment", summaryShort: "X25519MLKEM768 active at edge", detail: "Cloudflare edge (" + liveIp + ") supports TLS 1.3 X25519MLKEM768 hybrid key establishment under the Federal Benchmark.", remediation: "Retain hybrid ML-KEM-768 on TLS 1.3 and verify origin leg.", exposureClass: "internet-facing", policyStatus: "aligned", mosca: { urgency: 25, impact: 65, marginYears: 9 }, citations: [{ document: "NIST FIPS 203", clause: "ML-KEM-768", status: "FINAL", binds: "Federal benchmark" }] }
-        : { findingId: "f-kex-" + cleanHost, ruleId: "QRA-KEX-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Gap", ownerKind: "operator", title: "Classical ECDHE key exchange exposed to harvest-now-decrypt-later", summaryShort: "Classical X25519/ECDHE without ML-KEM", detail: "Endpoint (" + liveIp + ") requires hybrid ML-KEM-768/1024 key establishment upgrade on TLS 1.3 to mitigate harvest-now-decrypt-later risk.", remediation: "Enable X25519MLKEM768 (OpenSSL 3.5+, BoringSSL, AWS/Cloudflare PQ TLS) on TLS 1.3 listeners.", exposureClass: "internet-facing", policyStatus: "gap", mosca: { urgency: 82, impact: 85, marginYears: 4 }, citations: [{ document: "NIST FIPS 203", clause: "ML-KEM", status: "FINAL", binds: "Federal benchmark" }] };
+        ? {
+            findingId: "f-kex-" + slug, ruleId: "QRA-KEX-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Note", ownerKind: "operator",
+            title: "Hybrid Module-LWE key establishment (X25519MLKEM768 · IANA 0x11EC / 4588)", summaryShort: "NIST Level 3 ML-KEM-768 edge posture",
+            detail: "Cloudflare edge (" + liveIp + ") deploys hybrid X25519MLKEM768 (IANA 0x11EC / 4588, NIST FIPS 203 Module-LWE rank k=3, Level 3) with classical fallback; run QRA Go/Cloud Engine to confirm raw wire ServerHello key-share.",
+            remediation: "Retain hybrid X25519MLKEM768 on Leg 1 and enable ML-KEM on Leg 2 origin.",
+            exposureClass: "post-quantum", policyStatus: "aligned",
+            mosca: { urgency: 25, impact: 65, marginYears: 1, margin2030Years: -4, margin2035Years: 1, margin2040Years: 6, confidentialityYears: 7, migrationYears: 1, formulaTrace: "Confidentiality: MoscaSum = X(7y) + Y(1y) = 8y <= Z_2035(9y) => Margin +1y (FIPS 203 Level 3)" },
+            citations: [{ document: "NIST FIPS 203", clause: "ML-KEM-768", status: "FINAL", binds: "Federal benchmark" }]
+          }
+        : {
+            findingId: "f-kex-" + slug, ruleId: "QRA-KEX-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Gap", ownerKind: "operator",
+            title: "Classical ECDHE key exchange vulnerable to Shor's algorithm (HNDL)", summaryShort: "Classical X25519/ECDHE (NIST Level 0)",
+            detail: "Browser DoH check on " + liveIp + " indicates non-Cloudflare origin/edge requiring raw TLS wire verification and upgrade from classical ECDHE (NIST Level 0 against Shor's discrete-log algorithm) to hybrid X25519MLKEM768 (IANA 0x11EC / 4588, FIPS 203) where X + Y > Z.",
+            remediation: "Enable X25519MLKEM768 (OpenSSL 3.5+, BoringSSL, AWS/Cloudflare PQ TLS) on TLS 1.3 listeners and verify with QRA Go CLI.",
+            cutoverGuardrail: "Verify middlebox tolerance for ~1.2 KB ML-KEM ClientHello key shares (TLS fragmentation) in staging first.",
+            playbookSnippets: { "openssl-3.5.cnf": "Groups = X25519MLKEM768:X25519:P-256", "nginx-ssl.conf": "ssl_protocols TLSv1.3;\nssl_ecdh_curve X25519MLKEM768:X25519;" },
+            exposureClass: "quantum-vulnerable", policyStatus: "gap",
+            mosca: { urgency: 82, impact: 85, marginYears: -1, margin2030Years: -6, margin2035Years: -1, margin2040Years: 4, confidentialityYears: 7, migrationYears: 3, formulaTrace: "Confidentiality: MoscaSum = X(7y) + Y(3y) = 10y > Z_2035(9y) => Overdue -1y (ACT NOW)" },
+            citations: [{ document: "NIST FIPS 203", clause: "ML-KEM", status: "FINAL", binds: "Federal benchmark" }]
+          };
       const cnsaKex = {
-        findingId: "f-kex-cnsa-" + cleanHost, ruleId: "QRA-KEX-001", targetId: sampleObs.targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Gap", ownerKind: "operator",
-        title: "NSA CNSA 2.0 pure ML-KEM-1024 key establishment requirement", summaryShort: "ML-KEM-1024 (Category 5) not negotiated",
-        detail: "Assessed against NSA CNSA 2.0, National Security Systems require ML-KEM-1024 (NIST Level 5) rather than Level 3 X25519MLKEM768 or classical X25519.",
-        remediation: "Configure ML-KEM-1024 group support on TLS 1.3 terminators for NSS-scoped workloads.", exposureClass: "internet-facing", policyStatus: "gap", mosca: { urgency: 85, impact: 90, marginYears: 4 },
+        findingId: "f-kex-cnsa-" + slug, ruleId: "QRA-KEX-001", targetId: targetId, targetLabel: cleanHost, address: cleanHost + ":443", layer: "Key exchange", verdict: "Gap", ownerKind: "operator",
+        title: "NSA CNSA 2.0 pure ML-KEM-1024 (IANA 0x0202 / 514 · NIST Level 5) requirement", summaryShort: "Pure ML-KEM-1024 Level 5 required for NSS",
+        detail: "Assessed against NSA CNSA 2.0, National Security Systems mandate pure ML-KEM-1024 (IANA 0x0202 / 514, draft-ietf-tls-mlkem, Module-LWE rank k=4, NIST Level 5) rather than Level 3 X25519MLKEM768 or classical X25519.",
+        remediation: "Configure ML-KEM-1024 group support on TLS 1.3 terminators for NSS-scoped workloads.",
+        playbookSnippets: { "openssl-3.5-cnsa.cnf": "Groups = MLKEM1024:SecP384r1MLKEM1024" },
+        exposureClass: "quantum-vulnerable", policyStatus: "gap",
+        mosca: { urgency: 88, impact: 90, marginYears: -6, margin2030Years: -6, margin2035Years: -1, margin2040Years: 4, confidentialityYears: 7, migrationYears: 3, formulaTrace: "CNSA 2.0 Confidentiality: X(7y)+Y(3y)=10y > Z_2030(4y) => Overdue -6y" },
         citations: [{ document: "NSA CNSA 2.0 FAQ v2.2", clause: "ML-KEM-1024", status: "FINAL", binds: "National Security Systems" }]
       };
+
       base.evaluation.findings = [fedKex].concat(commonFindings).concat(base.evaluation.findings || []);
       base.evaluation.cnsa20Findings = [cnsaKex].concat(commonFindings).concat(base.evaluation.cnsa20Findings || []);
+
+      const makeRow = kexF => ({
+        systemId: targetId,
+        name: cleanHost,
+        address: cleanHost + ":443",
+        assessed: true,
+        cells: [
+          { layer: "Key exchange", verdict: kexF.verdict, findingId: kexF.findingId, summary: kexF.summaryShort },
+          { layer: "Certificates", verdict: certFinding.verdict, findingId: certFinding.findingId, summary: certFinding.summaryShort },
+          { layer: "Protocols", verdict: (isCloudflare || isOtherCdn) ? "Note" : "Ready", findingId: (isCloudflare || isOtherCdn) ? ("f-net-" + slug) : protoFinding.findingId, summary: (isCloudflare || isOtherCdn) ? "Split-TLS Leg 1" : "TLS 1.3 baseline" },
+          { layer: "Cipher suites", verdict: "Ready", findingId: ciphFinding.findingId, summary: "AEAD PFS suites" },
+          { layer: "Symmetric", verdict: "Ready", findingId: symFinding.findingId, summary: "AES-256 Level 5" }
+        ]
+      });
+      base.evaluation.migrationMap = [makeRow(fedKex)].concat(base.evaluation.migrationMap || []);
+      if (Array.isArray(base.evaluation.federalMigrationMap)) {
+        base.evaluation.federalMigrationMap = [makeRow(fedKex)].concat(base.evaluation.federalMigrationMap);
+      }
+      base.evaluation.cnsa20MigrationMap = [makeRow(cnsaKex)].concat(base.evaluation.cnsa20MigrationMap || []);
+      base.evaluation.systemsAssessed = (base.evaluation.systemsAssessed || 1) + 1;
+      base.evaluation.systemsTotal = (base.evaluation.systemsTotal || 1) + 1;
+      base.evaluation.counts = tallyCountsForList(base.evaluation.findings);
+      base.evaluation.cnsa20Counts = tallyCountsForList(base.evaluation.cnsa20Findings);
+
+      const newCbomComps = [
+        { type: "cryptographic-asset", "bom-ref": "cbom-kex-" + slug, name: negGroup + " (" + cleanHost + ")", cryptoProperties: { assetType: "algorithm", oid: isCloudflare ? "1.3.6.1.4.1.22554.5.6.1" : "1.3.101.110", algorithmProperties: { primitive: "kem", nistQuantumSecurityLevel: isCloudflare ? 3 : 0 } }, properties: [{ name: "qed:qra:host", value: cleanHost }, { name: "qed:qra:ianaGroup", value: groupCode }, { name: "qed:qra:quantumModel", value: isCloudflare ? "Module-LWE FIPS 203" : "Shor Polynomial Vulnerable" }] },
+        { type: "cryptographic-asset", "bom-ref": "cbom-sym-" + slug, name: "AES-256-GCM (" + cleanHost + ")", cryptoProperties: { assetType: "algorithm", oid: "2.16.840.1.101.3.4.1.46", algorithmProperties: { primitive: "ae", nistQuantumSecurityLevel: 5 } }, properties: [{ name: "qed:qra:host", value: cleanHost }, { name: "qed:qra:quantumModel", value: "Grover O(2^128) Resistant" }] },
+        { type: "cryptographic-asset", "bom-ref": "cbom-cert-" + slug, name: "X.509 Leaf (" + cleanHost + ")", cryptoProperties: { assetType: "certificate", certificateProperties: { subjectName: "CN=" + cleanHost, issuerName: issuerLabel, notValidAfter: "ACME Managed" } }, properties: [{ name: "qed:qra:host", value: cleanHost }] },
+        { type: "cryptographic-asset", "bom-ref": "cbom-proto-" + slug, name: "TLS 1.3 (" + cleanHost + ":443)", cryptoProperties: { assetType: "protocol", protocolProperties: { type: "tls", version: "1.3" } }, properties: [{ name: "qed:qra:host", value: cleanHost }, { name: "qed:qra:resolvedIp", value: liveIp }] }
+      ];
+      if (base.cbom17 && Array.isArray(base.cbom17.components)) {
+        base.cbom17.components = newCbomComps.concat(base.cbom17.components);
+      }
+      if (base.cbom16 && Array.isArray(base.cbom16.components)) {
+        base.cbom16.components = newCbomComps.concat(base.cbom16.components);
+      }
+      base.evaluation.cbomComponentCount = (base.cbom17 && base.cbom17.components) ? base.cbom17.components.length : (base.evaluation.cbomComponentCount || 0);
     }
     return base;
   }
@@ -3256,18 +3366,40 @@
       return new Response(JSON.stringify({ status: "saved", systems: 1 }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
     if (u.pathname === "/api/handover") {
-      const snap = await buildOfflineAssessSnapshot("handover-snapshot");
+      let body = {};
+      try { body = init.body ? JSON.parse(init.body) : {}; } catch (_e) {}
+      const hKind = String(body.kind || "handover-snapshot");
+      const hName = String(body.systemName || body.host || ("handover-" + hKind)).toLowerCase();
+      const snap = await buildOfflineAssessSnapshot(hName, { kind: hKind });
       offlineRunStore.set(snap.run.runId, snap);
+      focusedTargetHost = hName;
       return new Response(JSON.stringify({ runId: snap.run.runId }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
     if (u.pathname === "/api/diff") {
-      const snap = currentSnap || OFFLINE_SEED_SNAPSHOT;
+      const bId = u.searchParams.get("base") || "";
+      const tId = u.searchParams.get("target") || "";
+      const bSnap = (bId && offlineRunStore.get(bId)) || OFFLINE_SEED_SNAPSHOT;
+      const tSnap = (tId && offlineRunStore.get(tId)) || currentSnap || OFFLINE_SEED_SNAPSHOT;
+      const ys = u.searchParams.get("yardstick") || activeYardstick;
+      const bList = ys === "cnsa-2.0" ? (bSnap.evaluation.cnsa20Findings || bSnap.evaluation.findings || []) : (bSnap.evaluation.findings || []);
+      const tList = ys === "cnsa-2.0" ? (tSnap.evaluation.cnsa20Findings || tSnap.evaluation.findings || []) : (tSnap.evaluation.findings || []);
+      const bMap = new Map(bList.map(f => [f.ruleId + "::" + f.targetLabel, f]));
+      const tMap = new Map(tList.map(f => [f.ruleId + "::" + f.targetLabel, f]));
+      const newFindings = tList.filter(f => !bMap.has(f.ruleId + "::" + f.targetLabel));
+      const resolved = bList.filter(f => !tMap.has(f.ruleId + "::" + f.targetLabel));
+      const verdictChanges = [];
+      tList.forEach(tf => {
+        const bf = bMap.get(tf.ruleId + "::" + tf.targetLabel);
+        if (bf && bf.verdict !== tf.verdict) {
+          verdictChanges.push({ ruleId: tf.ruleId, targetLabel: tf.targetLabel, from: bf.verdict, to: tf.verdict });
+        }
+      });
       return new Response(JSON.stringify({
-        baseRunId: u.searchParams.get("base") || snap.run.runId,
-        targetRunId: u.searchParams.get("target") || snap.run.runId,
-        baseCounts: snap.evaluation.counts,
-        targetCounts: snap.evaluation.counts,
-        newFindings: [], resolved: [], resolvedFindings: [], verdictChanges: []
+        baseRunId: bId || bSnap.run.runId,
+        targetRunId: tId || tSnap.run.runId,
+        baseCounts: tallyCountsForList(bList),
+        targetCounts: tallyCountsForList(tList),
+        newFindings: newFindings, resolved: resolved, resolvedFindings: resolved, verdictChanges: verdictChanges
       }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
     if (u.pathname === "/api/scan") {
@@ -3528,7 +3660,10 @@
     document.getElementById("hdr-assessed").textContent = (currentSnap.run && (currentSnap.run.completedAtUtc || currentSnap.run.startedAtUtc)) || "—";
 
     const sigBadge = document.getElementById("hdr-sig-badge");
-    if (currentSnap.verified) {
+    if (currentSnap.browserEdgePreview) {
+      sigBadge.style.color = "var(--note-ink)";
+      sigBadge.innerHTML = glyphInlineSVG("Note") + " Browser DNS/Edge Preview (Run QRA CLI for Signed Manifest)";
+    } else if (currentSnap.verified) {
       sigBadge.style.color = "var(--ready-ink)";
       sigBadge.innerHTML = glyphInlineSVG("Ready") + " Signed Manifest Verified (Ed25519 + ML-DSA-87)";
     } else {
@@ -4346,7 +4481,9 @@
       toggleWrap.style.display = "none";
     }
 
-    document.getElementById("exec-verified-chip").textContent = currentSnap.verified ? "Signed Record Verified" : "Verification Warning";
+    document.getElementById("exec-verified-chip").textContent = currentSnap.browserEdgePreview
+      ? "DNS/Edge Preview (Unsigned)"
+      : (currentSnap.verified ? "Signed Record Verified" : "Verification Warning");
 
     /* Update Calibrated 240° Dual-Arc Radial SVG Gauge */
     document.getElementById("exec-score-number").textContent = v.readiness.empty ? "N/A" : String(v.readiness.score);
