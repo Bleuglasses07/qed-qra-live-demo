@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QuantumEdge Dynamics — QRA Team MVP (Simple Stoplight Edition)</title>
+<style>
+  :root {
+    --bg-page: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --bg-subtle: #F1F5F9;
+    --ink-bright: #0F172A;
+    --ink-body: #1E293B;
+    --ink-muted: #475569;
+    --border-soft: #E2E8F0;
+    --border-strong: #CBD5E1;
+    --cobalt: #0284C7;
+    --cobalt-deep: #0369A1;
+    --ready-bg: #ECFDF5;
+    --ready-border: #10B981;
+    --ready-ink: #065F46;
+    --warn-bg: #FFFBEB;
+    --warn-border: #D97706;
+    --warn-ink: #92400E;
+    --gap-bg: #FEF2F2;
+    --gap-border: #DC2626;
+    --gap-ink: #991B1B;
+    --note-bg: #F0F9FF;
+    --note-border: #0284C7;
+    --note-ink: #075985;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-page);
+    color: var(--ink-body);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 14px;
+  }
+  /* Tandem Switcher Banner */
+  .tandem-ribbon {
+    background: #0F172A;
+    color: #F8FAFC;
+    padding: 8px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .tandem-link {
+    color: #38BDF8;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 4px 12px;
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+  }
+  .tandem-link:hover { background: rgba(56, 189, 248, 0.14); }
+
+  /* Top Header */
+  .top-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+    padding: 12px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+  }
+  .brand-lockup { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: #0F172A; color: #38BDF8;
+    display: grid; place-items: center; font-weight: 600; font-size: 15px;
+  }
+  .brand-title { font-size: 17px; font-weight: 600; color: var(--ink-bright); }
+  .brand-sub { font-size: 13.5px; color: var(--ink-muted); }
+
+  .nav-tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .nav-tab {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .nav-tab.active {
+    background: #0F172A;
+    color: #FFFFFF;
+  }
+  .header-toggles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg-group {
+    display: inline-flex;
+    background: var(--bg-subtle);
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+  }
+  .seg-btn {
+    min-height: 38px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .seg-btn.active {
+    background: #FFFFFF;
+    color: var(--ink-bright);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  }
+
+  /* Main Container */
+  .shell {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 22px 20px 56px;
+  }
+  .tab-view { display: none; }
+  .tab-view.active { display: block; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+    margin-bottom: 18px;
+  }
+  .scan-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .scan-input {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 16px;
+    font-size: 16px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 12px;
+    color: var(--ink-bright);
+    background: #FFFFFF;
+  }
+  .btn-primary {
+    min-height: 52px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--cobalt);
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:hover { background: var(--cobalt-deep); }
+  .btn-dark {
+    min-height: 46px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 11px;
+    background: #0F172A;
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-outline {
+    min-height: 44px;
+    padding: 0 15px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: #FFFFFF;
+    color: var(--ink-bright);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-outline:hover { border-color: var(--cobalt); color: var(--cobalt-deep); }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .preset-chip {
+    min-height: 38px;
+    padding: 6px 13px;
+    border-radius: 9px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-page);
+    color: var(--ink-bright);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .preset-chip.is-sandbox {
+    background: #F0F9FF;
+    border-color: #7DD3FC;
+    color: #0369A1;
+  }
+  .preset-chip.is-active {
+    background: #0F172A;
+    border-color: #0F172A;
+    color: #FFFFFF;
+  }
+
+  /* Two-Column Multi-Viewport Grid (Stays 2-column at 800px and 1440px per AGENTS.md §3!) */
+  .overview-two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 5.8fr) minmax(0, 4.2fr);
+    gap: 18px;
+    align-items: stretch;
+  }
+  .stoplight-banner {
+    border-radius: 16px;
+    padding: 24px;
+    border: 2px solid var(--ready-border);
+    background: var(--ready-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .stoplight-banner.st-warn { border-color: var(--warn-border); background: var(--warn-bg); }
+  .stoplight-banner.st-gap { border-color: var(--gap-border); background: var(--gap-bg); }
+
+  .stoplight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    background: #FFFFFF;
+    border: 1px solid currentColor;
+  }
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .score-tile {
+    background: #FFFFFF;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .score-big {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--ink-bright);
+    line-height: 1.1;
+  }
+  .score-lbl {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  /* Clickable 4-Box KPI Grid */
+  .kpi-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .kpi-click-card {
+    text-align: left;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border-soft);
+    background: #FFFFFF;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .kpi-click-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--cobalt);
+  }
+  .kpi-num { font-size: 28px; font-weight: 600; color: var(--ink-bright); line-height: 1.15; }
+  .kpi-title { font-size: 15px; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+  .kpi-hint { font-size: 13.5px; color: var(--ink-muted); margin-top: 3px; }
+
+  /* Segmented 4-PDF Bar */
+  .pdf-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .pdf-choice-btn {
+    text-align: left;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border-strong);
+    background: #FFFFFF;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 118px;
+  }
+  .pdf-choice-btn.is-featured {
+    background: #0F172A;
+    border-color: #0F172A;
+    color: #FFFFFF;
+  }
+  .pdf-choice-btn:hover { border-color: var(--cobalt); }
+
+  /* Findings Cards */
+  .finding-card {
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 18px;
+    background: #FFFFFF;
+    margin-bottom: 12px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .b-gap { background: var(--gap-bg); color: var(--gap-ink); border: 1px solid var(--gap-border); }
+  .b-supplier { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-border); }
+  .b-note { background: var(--note-bg); color: var(--note-ink); border: 1px solid var(--note-border); }
+  .b-ready { background: var(--ready-bg); color: var(--ready-ink); border: 1px solid var(--ready-border); }
+
+  .qram-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .qram-item {
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-page);
+  }
+  .qram-item label {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink-bright);
+    margin-bottom: 8px;
+  }
+  .qram-select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 15px;
+    border-radius: 9px;
+    border: 1px solid var(--border-strong);
+    background: #FFFFFF;
+    color: var(--ink-bright);
+  }
+
+  .tech-only { display: none; }
+  body.mode-technical .tech-only { display: block; }
+
+  dialog.modal-sheet {
+    width: min(920px, 95vw);
+    max-height: 90vh;
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+    padding: 0;
+    background: #FFFFFF;
+    color: var(--ink-body);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  }
+  dialog.modal-sheet::backdrop {
+    background: rgba(15, 23, 42, 0.52);
+    backdrop-filter: blur(2px);
+  }
+  .modal-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    background: #FFFFFF;
+  }
+  .modal-body { padding: 22px; overflow: auto; }
+
+  @media (max-width: 1024px) and (min-width: 641px) {
+    .top-header { grid-template-columns: 1fr auto; }
+    .nav-tabs { grid-column: 1 / -1; justify-content: flex-start; }
+    .pdf-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .qram-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .top-header { grid-template-columns: 1fr; gap: 10px; }
+    .nav-tabs { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+    .scan-grid, .overview-two-col, .score-row, .kpi-grid-4, .pdf-grid-4, .qram-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="tandem-ribbon" role="region" aria-label="Dual-track MVP mode switcher">
+  <div>
+    <strong>Track B · Team MVP (Simple Stoplight Edition)</strong> — Built from Ruhul, Dylan (CISO) &amp; Dr. Kennedy (Applied Physicist &amp; CTO) All-Hands Review
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <a class="tandem-link" href="./index.html" id="link-founder-studio">&#8592; Switch to Track A: Founder Full Studio (Ruhul v1)</a>
+  </div>
+</div>
+
+<header class="top-header">
+  <div class="brand-lockup">
+    <div class="brand-mark" aria-hidden="true">QED</div>
+    <div>
+      <div class="brand-title">Quantum Readiness Assessment</div>
+      <div class="brand-sub">Plain-English Stoplight + Quantifiable Mosca Risk</div>
+    </div>
+  </div>
+
+  <nav class="nav-tabs" role="tablist" aria-label="Team MVP sections">
+    <button type="button" class="nav-tab active" role="tab" aria-selected="true" data-tab="overview">1. Overview</button>
+    <button type="button" class="nav-tab" role="tab" aria-selected="false" data-tab="findings" id="tab-btn-findings">2. Findings &amp; Fixes</button>
+    <button type="button" class="nav-tab" role="tab" aria-selected="false" data-tab="qram">3. 9-Question Risk Score</button>
+    <button type="button" class="nav-tab" role="tab" aria-selected="false" data-tab="reports">4. Segmented PDFs &amp; CBOM</button>
+  </nav>
+
+  <div class="header-toggles">
+    <div class="seg-group" role="group" aria-label="Audience detail level">
+      <button type="button" class="seg-btn active" data-aud="plain" aria-pressed="true">Plain English</button>
+      <button type="button" class="seg-btn" data-aud="technical" aria-pressed="false">Technical Depth</button>
+    </div>
+    <div class="seg-group" role="group" aria-label="Assessment benchmark">
+      <button type="button" class="seg-btn active" data-ys="federal" aria-pressed="true">Federal Benchmark</button>
+      <button type="button" class="seg-btn" data-ys="cnsa20" aria-pressed="false">NSA CNSA 2.0</button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- SHARED LAUNCH BAR: LIVE WEBSITES + SIMULATED ERP/CRM/CLOUD SANDBOXES -->
+  <section class="card" aria-label="Assess a live website or simulated enterprise stack">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
+      <strong style="font-size:17px;color:var(--ink-bright)">Step 1 · Check Any Website or Launch a Simulated Enterprise ERP / Cloud Lab</strong>
+      <span id="active-mode-badge" class="status-badge b-note">&#9670; Live Read-Only TLS Check · Zero Secret Ingestion</span>
+    </div>
+
+    <form id="scan-form" class="scan-grid" novalidate>
+      <div>
+        <label for="domain-input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Website domain</label>
+        <input id="domain-input" type="text" class="scan-input" placeholder="Enter any website (e.g. boardwalkglobal.net, hilton.com, marriott.com)" value="boardwalkglobal.net" autocorrect="off" autocapitalize="none" spellcheck="false">
+      </div>
+      <button type="submit" class="btn-primary" id="btn-run-assessment">Run Assessment</button>
+    </form>
+
+    <div class="chip-row">
+      <strong style="color:var(--ink-muted)">Live Websites:</strong>
+      <button type="button" class="preset-chip is-active" data-preset="boardwalkglobal.net">boardwalkglobal.net (CISO Test)</button>
+      <button type="button" class="preset-chip" data-preset="www.hilton.com">hilton.com</button>
+      <button type="button" class="preset-chip" data-preset="www.marriott.com">marriott.com</button>
+      <button type="button" class="preset-chip" data-preset="www.qedynamics.io">qedynamics.io</button>
+    </div>
+
+    <div class="chip-row">
+      <strong style="color:var(--cobalt-deep)">Simulated ERP / Cloud Labs (Crash-Test Dummy):</strong>
+      <button type="button" class="preset-chip is-sandbox" data-preset="sim-sap-erp">SIMULATED · SAP S/4HANA ERP</button>
+      <button type="button" class="preset-chip is-sandbox" data-preset="sim-oracle-hosp">SIMULATED · Oracle Hospitality ERP</button>
+      <button type="button" class="preset-chip is-sandbox" data-preset="sim-govcon-vpc">SIMULATED · Salesforce + AWS GovCon</button>
+      <button type="button" class="preset-chip is-sandbox" data-preset="sim-clinic-ehr">SIMULATED · Medical Clinic EHR</button>
+    </div>
+
+    <div class="chip-row" style="border-top:1px solid var(--border-soft);padding-top:10px">
+      <strong style="color:var(--ink-muted)">Industry Profile (CTO):</strong>
+      <button type="button" class="preset-chip" data-sector="finance">Finance</button>
+      <button type="button" class="preset-chip" data-sector="healthcare">Healthcare</button>
+      <button type="button" class="preset-chip" data-sector="insurance">Insurance</button>
+      <button type="button" class="preset-chip" data-sector="telecom">Telecommunications</button>
+      <button type="button" class="preset-chip" data-sector="retail">Retail &amp; Hospitality</button>
+      <button type="button" class="preset-chip" data-sector="military">Military &amp; Defense (CNSA 2.0)</button>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       TAB 1: ULTRA-SIMPLE "NORTON STOPLIGHT" OVERVIEW (ZERO WALL OF TEXT)
+       ====================================================================== -->
+  <section id="view-overview" class="tab-view active" aria-label="Plain-English Stoplight Overview">
+    <div class="overview-two-col">
+
+      <!-- LEFT: STOPLIGHT VERDICT CARD -->
+      <div class="stoplight-banner" id="stoplight-card">
+        <div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+            <span class="stoplight-pill" id="stoplight-pill">&#9679; READY</span>
+            <span style="font-size:14px;font-weight:600;color:var(--ink-muted)" id="target-scope-tag">Live Public Website</span>
+          </div>
+          <h1 style="margin:0 0 8px;font-size:26px;color:var(--ink-bright)" id="hero-target-title">boardwalkglobal.net</h1>
+          <p style="margin:0;font-size:16.5px;color:var(--ink-body)" id="hero-plain-verdict"></p>
+          <p class="tech-only mono" style="margin:10px 0 0;padding:10px 12px;background:rgba(255,255,255,0.8);border-radius:8px;border:1px solid var(--border-soft)" id="hero-tech-detail"></p>
+        </div>
+
+        <div class="score-row">
+          <div class="score-tile">
+            <div class="score-big" id="val-readiness">88 / 100</div>
+            <div class="score-lbl">Readiness Score (<span id="val-grade">B+</span>)</div>
+          </div>
+          <div class="score-tile">
+            <div class="score-big" id="val-controllable">92 / 100</div>
+            <div class="score-lbl">Controllable Today</div>
+          </div>
+          <div class="score-tile">
+            <div class="score-big" id="val-mosca-urgency">48 / 100</div>
+            <div class="score-lbl">Mosca Urgency (<span id="val-mosca-tag">X+Y vs Z</span>)</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+          <button type="button" class="btn-dark" id="btn-hero-exec-pdf">See &amp; Download 1-Page Executive PDF</button>
+          <button type="button" class="btn-outline" id="btn-hero-listen">&#9654; Listen (Female Voice)</button>
+          <button type="button" class="btn-outline" id="btn-hero-reply">&#8617; Reply / Add Note</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: CLICKABLE KPI BOXES (CLICK ANY BOX -> JUMPS STRAIGHT TO THOSE ITEMS) -->
+      <div class="card" style="margin-bottom:0;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <h2 style="margin:0 0 4px;font-size:19px;color:var(--ink-bright)">Click Any Box to Inspect Items</h2>
+          <p style="margin:0 0 14px;font-size:14.5px;color:var(--ink-muted)">Every box filters your results in one tap—no hunting through menus.</p>
+
+          <div class="kpi-grid-4">
+            <button type="button" class="kpi-click-card" data-jump-filter="Gap">
+              <div class="kpi-num" id="cnt-gap">0</div>
+              <div class="kpi-title" style="color:var(--gap-ink)">&#9632; Action Needed (Gap)</div>
+              <div class="kpi-hint">Fix on your systems now</div>
+            </button>
+
+            <button type="button" class="kpi-click-card" data-jump-filter="Depends on a supplier">
+              <div class="kpi-num" id="cnt-supplier">1</div>
+              <div class="kpi-title" style="color:var(--warn-ink)">&#9650; Vendor / CA Waiting</div>
+              <div class="kpi-hint">Depends on external provider</div>
+            </button>
+
+            <button type="button" class="kpi-click-card" data-jump-filter="Note">
+              <div class="kpi-num" id="cnt-note">1</div>
+              <div class="kpi-title" style="color:var(--note-ink)">&#9670; Advisory Note</div>
+              <div class="kpi-hint">Transition watch item</div>
+            </button>
+
+            <button type="button" class="kpi-click-card" data-jump-filter="Ready">
+              <div class="kpi-num" id="cnt-ready">3</div>
+              <div class="kpi-title" style="color:var(--ready-ink)">&#9679; Ready Today</div>
+              <div class="kpi-hint">Meets selected benchmark</div>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-soft);font-size:14px;color:var(--ink-muted)" id="framing-footnote">
+          Assessed against the Federal Benchmark (commercial benchmark reference—not a compliance certification).
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: 4 SEGMENTED 1-CLICK PDF REPORTS -->
+    <div class="card" style="margin-top:18px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <h2 style="margin:0;font-size:19px;color:var(--ink-bright)">Step 2 · Pick Only the PDF You Need (Or Full Report for AI Review)</h2>
+          <p style="margin:3px 0 0;font-size:14.5px;color:var(--ink-muted)">Segmented reports so executives, IT teams, and CISOs never wade through 30 pages unless they want to.</p>
+        </div>
+      </div>
+
+      <div class="pdf-grid-4">
+        <button type="button" class="pdf-choice-btn is-featured" data-pdf-mode="exec">
+          <div>
+            <div style="font-size:13px;opacity:0.8;font-weight:600">1-PAGE BRIEF</div>
+            <div style="font-size:16.5px;font-weight:600;margin-top:4px">Executive Summary PDF</div>
+            <div style="font-size:13.5px;opacity:0.88;margin-top:4px">Stoplight score, plain-English risk &amp; top 3 priorities.</div>
+          </div>
+          <span style="font-size:14px;font-weight:600;color:#38BDF8">Preview &amp; Download PDF &#8594;</span>
+        </button>
+
+        <button type="button" class="pdf-choice-btn" data-pdf-mode="fix">
+          <div>
+            <div style="font-size:13px;color:var(--cobalt-deep);font-weight:600">CUT TO THE CHASE</div>
+            <div style="font-size:16.5px;font-weight:600;color:var(--ink-bright);margin-top:4px">Just What to Fix PDF</div>
+            <div style="font-size:13.5px;color:var(--ink-muted);margin-top:4px">Actionable remediation checklist only—zero fluff.</div>
+          </div>
+          <span style="font-size:14px;font-weight:600;color:var(--cobalt-deep)">Preview &amp; Download PDF &#8594;</span>
+        </button>
+
+        <button type="button" class="pdf-choice-btn" data-pdf-mode="full">
+          <div>
+            <div style="font-size:13px;color:var(--ink-muted);font-weight:600">FULL CBOM + PHYSICS</div>
+            <div style="font-size:16.5px;font-weight:600;color:var(--ink-bright);margin-top:4px">Complete Technical PDF</div>
+            <div style="font-size:13.5px;color:var(--ink-muted);margin-top:4px">Full CBOM, Shor/Grover physics &amp; NIST/CNSSP citations.</div>
+          </div>
+          <span style="font-size:14px;font-weight:600;color:var(--cobalt-deep)">Preview &amp; Download PDF &#8594;</span>
+        </button>
+
+        <button type="button" class="pdf-choice-btn" data-pdf-mode="cert">
+          <div>
+            <div style="font-size:13px;color:var(--ready-ink);font-weight:600">BOARD RECORD</div>
+            <div style="font-size:16.5px;font-weight:600;color:var(--ink-bright);margin-top:4px">Completion Certificate PDF</div>
+            <div style="font-size:13.5px;color:var(--ink-muted);margin-top:4px">Certificate of Assessment Completion (not a certification).</div>
+          </div>
+          <span style="font-size:14px;font-weight:600;color:var(--cobalt-deep)">Preview &amp; Download PDF &#8594;</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       TAB 2: FINDINGS & PLAIN-ENGLISH FIXES
+       ====================================================================== -->
+  <section id="view-findings" class="tab-view" aria-label="Findings and remediation steps">
+    <div class="card">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+        <div>
+          <h2 style="margin:0;font-size:21px;color:var(--ink-bright)">Findings &amp; Plain-English Fixes</h2>
+          <p style="margin:4px 0 0;font-size:14.5px;color:var(--ink-muted)">Toggle "Technical Depth" in the top bar anytime to inspect raw TLS suites, OIDs, and rule IDs.</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="finding-filter-pills">
+          <button type="button" class="preset-chip is-active" data-f-filter="ALL">All Items</button>
+          <button type="button" class="preset-chip" data-f-filter="Gap">Action Needed</button>
+          <button type="button" class="preset-chip" data-f-filter="Depends on a supplier">Vendor Waiting</button>
+          <button type="button" class="preset-chip" data-f-filter="Note">Notes</button>
+          <button type="button" class="preset-chip" data-f-filter="Ready">Ready</button>
+        </div>
+      </div>
+      <div id="findings-container"></div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       TAB 3: DYLAN'S 9-QUESTION QRAM INTAKE + DR. KENNEDY'S MOSCA MATH
+       ====================================================================== -->
+  <section id="view-qram" class="tab-view" aria-label="9-Question QRAM and Quantifiable Mosca Risk Methodology">
+    <div class="card">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <div>
+          <span class="status-badge b-note">&#9670; QED PROPRIETARY QUANTIFIABLE SCORING MODEL</span>
+          <h2 style="margin:8px 0 4px;font-size:22px;color:var(--ink-bright)">9-Question Client Profile &amp; Dr. Michele Mosca's Inequality (X + Y &gt; Z)</h2>
+          <p style="margin:0;font-size:15px;color:var(--ink-muted)">100% deterministic integer math—every point can be verified by hand by an applied physicist, CISO, or auditor.</p>
+        </div>
+        <div style="padding:12px 16px;border-radius:12px;background:#0F172A;color:#FFFFFF;min-width:250px">
+          <div style="font-size:13px;color:#94A3B8">QUANTIFIABLE MOSCA EQUATION</div>
+          <div style="font-size:19px;font-weight:600;margin-top:2px" id="qram-mosca-equation">X(10y) + Y(3y) = 13y &gt; Z(9y)</div>
+          <div style="font-size:13.5px;color:#38BDF8;margin-top:2px" id="qram-urgency-readout">Weighted Urgency: 68 / 100</div>
+        </div>
+      </div>
+
+      <div class="qram-grid" id="qram-form-grid">
+        <div class="qram-item">
+          <label for="q1-x">1. Data Confidentiality Shelf-Life (X)</label>
+          <select id="q1-x" class="qram-select">
+            <option value="3">Under 3 years (short-lived session data)</option>
+            <option value="7">3 to 7 years (retail / commercial contracts)</option>
+            <option value="12" selected>8 to 15 years (financial / telecom / tax)</option>
+            <option value="25">15 to 25+ years (healthcare PHI / defense NSS)</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q2-y">2. Estate Migration Lead-Time (Y)</label>
+          <select id="q2-y" class="qram-select">
+            <option value="1">Under 1 year (single modern web/cloud app)</option>
+            <option value="3" selected>1 to 3 years (multi-system SMB / mid-market)</option>
+            <option value="5">3 to 5+ years (global ERP / legacy hardware)</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q3-z">3. Target Quantum / Statutory Horizon (Z)</label>
+          <select id="q3-z" class="qram-select">
+            <option value="4">4 years — 2030 PQ Key Exchange / NSS Hardware Gate</option>
+            <option value="5">5 years — 2031 CNSSP 15 / EO 14412 Signature Gate</option>
+            <option value="9" selected>9 years — 2035 NIST IR 8547 Full Disallowance</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q4-crit">4. Data Criticality &amp; Perishability</label>
+          <select id="q4-crit" class="qram-select">
+            <option value="10">Low — Public marketing / non-sensitive</option>
+            <option value="20" selected>High — Regulated PII, financial, or IP</option>
+            <option value="30">Mission-Critical — Lifetime EHR, keys, or NSS</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q5-stack">5. Connected CRM / ERP / EHR Depth</label>
+          <select id="q5-stack" class="qram-select">
+            <option value="5">1 platform (public website only)</option>
+            <option value="12" selected>2 to 4 platforms (CRM + ERP + Cloud)</option>
+            <option value="20">5+ platforms (SAP/Oracle + hybrid data center)</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q6-cbom">6. Current Cryptographic Inventory (CBOM)</label>
+          <select id="q6-cbom" class="qram-select">
+            <option value="0">Automated CycloneDX CBOM in place</option>
+            <option value="8" selected>Partial spreadsheet / manual certificate list</option>
+            <option value="15">No cryptographic inventory today</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q7-saas">7. Third-Party SaaS &amp; Supplier Reliance</label>
+          <select id="q7-saas" class="qram-select">
+            <option value="4">Mostly self-hosted / full key control</option>
+            <option value="9" selected>Mixed Cloud + SaaS (Salesforce / Oracle / AWS)</option>
+            <option value="15">Heavy multi-tenant SaaS (&gt;60% external vendors)</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q8-exp">8. Harvest-Now-Decrypt-Later Exposure</label>
+          <select id="q8-exp" class="qram-select">
+            <option value="2">Air-gapped internal network only</option>
+            <option value="8">Private VPN / mTLS partner trunks</option>
+            <option value="15" selected>Public internet HTTPS / APIs exposed today</option>
+          </select>
+        </div>
+        <div class="qram-item">
+          <label for="q9-hw">9. Hardware / BMC Firmware Updatability</label>
+          <select id="q9-hw" class="qram-select">
+            <option value="0">100% cloud / software-updatable</option>
+            <option value="8" selected>3–5 year server / appliance refresh cycle</option>
+            <option value="18">Fixed-ROM BMCs / medical / OT devices (&gt;7y life)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       TAB 4: SEGMENTED PDFS, CYCLONEDX 1.7 CBOM & ABSORB PDF
+       ====================================================================== -->
+  <section id="view-reports" class="tab-view" aria-label="Segmented PDF exports and CycloneDX CBOM">
+    <div class="card">
+      <h2 style="margin:0 0 6px;font-size:21px;color:var(--ink-bright)">Segmented PDF Deliverables &amp; Machine-Readable CBOM</h2>
+      <p style="margin:0 0 14px;font-size:15px;color:var(--ink-muted)">Download only the slice your audience needs, export CycloneDX 1.7 JSON, or drop any CISO/vendor PDF for local analysis.</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+        <button type="button" class="btn-dark" data-pdf-mode="exec">1. Executive 1-Page PDF</button>
+        <button type="button" class="btn-primary" data-pdf-mode="fix">2. Remediation Fix Sheet PDF</button>
+        <button type="button" class="btn-outline" data-pdf-mode="full">3. Full Technical &amp; CBOM PDF</button>
+        <button type="button" class="btn-outline" data-pdf-mode="cert">4. Completion Certificate PDF</button>
+        <button type="button" class="btn-outline" id="btn-dl-cbom-json">Download CycloneDX 1.7 CBOM (.json)</button>
+      </div>
+
+      <div style="padding:16px;border-radius:12px;background:var(--bg-page);border:1px solid var(--border-soft)">
+        <strong style="display:block;font-size:15.5px;color:var(--ink-bright);margin-bottom:6px">CycloneDX 1.7 Cryptographic Bill of Materials Preview</strong>
+        <pre id="cbom-preview-box" class="mono" style="margin:0;max-height:240px;overflow:auto;white-space:pre-wrap;color:var(--ink-body)"></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- SEGMENTED REPORT PREVIEW & DOWNLOAD MODAL -->
+<dialog id="pdf-preview-modal" class="modal-sheet" closedby="any" aria-labelledby="pdf-modal-title">
+  <div class="modal-head">
+    <strong id="pdf-modal-title" style="font-size:17px;color:var(--ink-bright)">Segmented Assessment Report</strong>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button type="button" class="btn-primary" id="btn-modal-dl-pdf" style="min-height:40px;padding:0 16px;font-size:14.5px">Download .PDF File</button>
+      <button type="button" class="btn-outline" id="btn-modal-print" style="min-height:40px">Print / Save as PDF</button>
+      <button type="button" class="btn-outline" id="btn-modal-close" style="min-height:40px">Close</button>
+    </div>
+  </div>
+  <div class="modal-body" id="pdf-modal-content"></div>
+</dialog>
+
+<!-- SLACK-STYLE INLINE THREAD REPLY & DICTATE MODAL -->
+<dialog id="reply-modal" class="modal-sheet" closedby="any" aria-labelledby="reply-modal-title">
+  <div class="modal-head">
+    <strong id="reply-modal-title" style="font-size:17px;color:var(--ink-bright)">Reply in Thread (Carries Context Automatically)</strong>
+    <button type="button" class="btn-outline" id="btn-reply-close" style="min-height:40px">Close</button>
+  </div>
+  <div class="modal-body">
+    <div id="reply-quote-box" style="padding:12px 14px;border-left:4px solid var(--cobalt);background:var(--bg-page);border-radius:0 10px 10px 0;font-size:14.5px;margin-bottom:12px;white-space:pre-wrap"></div>
+    <label for="reply-textarea" style="display:block;font-weight:600;margin-bottom:6px">Your Note or Question</label>
+    <textarea id="reply-textarea" rows="4" style="width:100%;padding:12px;font-size:16px;border-radius:10px;border:1.5px solid var(--border-strong);font-family:inherit" placeholder="Type or tap Dictate Mic…"></textarea>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;align-items:center">
+      <button type="button" class="btn-primary" id="btn-copy-reply" style="min-height:44px">Copy Threaded Reply</button>
+      <button type="button" class="btn-outline" id="btn-dictate-reply" style="min-height:44px">Dictate Mic</button>
+      <span id="reply-status" role="status" style="font-size:14px;font-weight:600;color:var(--ready-ink)"></span>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function() {
+  const PROFILES = {
+    "boardwalkglobal.net": {
+      title: "boardwalkglobal.net",
+      kind: "Live Public Website · Verified TLS 1.3",
+      isSandbox: false,
+      plainSummaryFed: "Good news: boardwalkglobal.net negotiates modern TLS 1.3 with forward secrecy and has zero immediate configuration emergencies under the Federal Benchmark. Two forward-looking items remain: enabling hybrid post-quantum key exchange (X25519MLKEM768) when your hosting edge offers it, and waiting on Let's Encrypt for post-quantum certificates.",
+      plainSummaryCnsa: "Under strict NSA CNSA 2.0 (National Security Systems yardstick), boardwalkglobal.net needs two upgrades: its TLS 1.3 bulk cipher uses AES-128-GCM instead of AES-256-GCM, and key exchange does not yet use pure Category 5 ML-KEM-1024.",
+      techDetail: "Observed TLSv1.3 · Cipher TLS_AES_128_GCM_SHA256 · Issuer Let's Encrypt YR2 · Forward-secret ECDHE active.",
+      findingsFed: [
+        { status: "Ready", layer: "Protocols", title: "Modern TLS 1.3 Active", plain: "Your website uses modern TLS 1.3 encryption in transit, preventing legacy protocol downgrade attacks.", fix: "Keep TLS 1.3 enabled and legacy TLS 1.0/1.1 disabled.", tech: "Rule QRA-PROTO-003 · TLSv1.3 verified · NIST SP 800-52 Rev. 2." },
+        { status: "Ready", layer: "Symmetric", title: "Authenticated Bulk Encryption (AES-128-GCM)", plain: "AES-128-GCM is accepted under the Federal Civilian Benchmark.", fix: "No immediate action required for commercial benchmark; prefer AES-256-GCM for CNSA 2.0 parity.", tech: "Rule QRA-SYM-001 · TLS_AES_128_GCM_SHA256 (NIST Category 1)." },
+        { status: "Note", layer: "Key exchange", title: "Enable Hybrid Post-Quantum Key Exchange Next", plain: "Traffic uses classical elliptic-curve key exchange today; turning on hybrid ML-KEM-768 shields long-lived sessions against Harvest-Now-Decrypt-Later collection.", fix: "Enable X25519MLKEM768 (RFC 10024) in your hosting / CDN TLS settings.", tech: "Rule QRA-KEX-001 · Classical X25519/P-256 observed; enable 0x11EC X25519MLKEM768." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Public Certificate Uses Classical Signature (Let's Encrypt)", plain: "Your SSL/TLS certificate is signed with classical cryptography because public browsers and Certificate Authorities are still rolling out post-quantum roots.", fix: "No manual replacement needed today—track Let's Encrypt automated ML-DSA rollout ahead of 2030/2031.", tech: "Rule QRA-CERT-001 · Issuer Let's Encrypt YR2 · Public CA ecosystem dependency." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Key exchange", title: "Missing Category 5 ML-KEM-1024 Key Establishment", plain: "NSA CNSA 2.0 requires pure ML-KEM-1024 key establishment for National Security Systems.", fix: "Deploy ML-KEM-1024 capable TLS termination if serving NSS enclaves.", tech: "Rule QRA-KEX-001 · CNSSP 15 (Dec 2024 / Mar 2025) requires FIPS 203 ML-KEM-1024." },
+        { status: "Gap", layer: "Symmetric", title: "AES-128-GCM Negotiated Instead of AES-256-GCM", plain: "NSA CNSA 2.0 requires 256-bit AES across all tiers; 128-bit AES does not meet CNSA 2.0.", fix: "Prioritize TLS_AES_256_GCM_SHA384 in server cipher preferences.", tech: "Rule QRA-SYM-001 · Observed TLS_AES_128_GCM_SHA256 · Grover bound Category 1 vs Category 5." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Certificate Chain Not Yet ML-DSA-87", plain: "Public CA certificate does not use CNSA 2.0 ML-DSA-87 signatures.", fix: "Use private NSS PKI issuing ML-DSA-87 certificates if operating inside NSS scope.", tech: "Rule QRA-CERT-001 · OID 2.16.840.1.101.3.4.3.19 required by 31 Dec 2031." },
+        { status: "Ready", layer: "Protocols", title: "TLS 1.3 Framing Active", plain: "TLS 1.3 protocol framing is active.", fix: "Maintain TLS 1.3 enforcement.", tech: "Rule QRA-PROTO-003 · TLSv1.3." }
+      ]
+    },
+    "www.hilton.com": {
+      title: "hilton.com",
+      kind: "Live Public Website · Verified TLS 1.3",
+      isSandbox: false,
+      plainSummaryFed: "hilton.com runs strong 256-bit TLS 1.3 (AES-256-GCM + SHA-384), but still negotiates classical key exchange at the front door—meaning long-lived guest loyalty and reservation sessions should upgrade to hybrid post-quantum key exchange.",
+      plainSummaryCnsa: "hilton.com meets AES-256-GCM and SHA-384 symmetric/hash rules under CNSA 2.0, but lacks ML-KEM-1024 key exchange and ML-DSA-87 certificates.",
+      techDetail: "Observed TLSv1.3 · Cipher TLS_AES_256_GCM_SHA384 · Issuer DigiCert Global G3 TLS ECC SHA384 2020 CA1.",
+      findingsFed: [
+        { status: "Gap", layer: "Key exchange", title: "Classical ECDHE Key Exchange Exposed to Harvest-Now-Decrypt-Later", plain: "Guest booking and loyalty traffic does not yet negotiate post-quantum hybrid key exchange.", fix: "Enable X25519MLKEM768 (RFC 10024) on Akamai/edge load balancers.", tech: "Rule QRA-KEX-001 · Classical ECDHE only; enable hybrid ML-KEM-768." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "DigiCert Public Certificate Awaits Post-Quantum CA Rollout", plain: "DigiCert ECC P-384 certificate depends on public browser/CA post-quantum root adoption.", fix: "Coordinate with DigiCert for hybrid/ML-DSA leaf rollout.", tech: "Rule QRA-CERT-001 · DigiCert Global G3 TLS ECC SHA384 2020 CA1." },
+        { status: "Ready", layer: "Symmetric", title: "256-bit AES-GCM Encryption Active", plain: "Uses quantum-resilient 256-bit symmetric encryption.", fix: "Maintain TLS_AES_256_GCM_SHA384.", tech: "Rule QRA-SYM-001 · AES-256-GCM (NIST Category 5 Grover resilience)." },
+        { status: "Ready", layer: "Protocols", title: "Modern TLS 1.3 Negotiated", plain: "Modern TLS 1.3 handshake verified.", fix: "Verify legacy TLS 1.0/1.1 remain disabled across regional properties.", tech: "Rule QRA-PROTO-003 · TLSv1.3." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Key exchange", title: "Requires Pure ML-KEM-1024 Key Exchange", plain: "Classical ECDHE fails CNSA 2.0 Category 5 key establishment.", fix: "Adopt ML-KEM-1024 for NSS-grade links.", tech: "Rule QRA-KEX-001 · CNSSP 15." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "ECDSA P-384 Certificate Must Transition to ML-DSA-87", plain: "Meets legacy CNSA 1.0 P-384 strength but requires ML-DSA-87 by 31 Dec 2031.", fix: "Plan ML-DSA-87 PKI migration.", tech: "Rule QRA-CERT-001 · ECDSA-P384-SHA384." },
+        { status: "Ready", layer: "Symmetric", title: "AES-256-GCM & SHA-384 Match CNSA 2.0", plain: "Bulk encryption and SHA-384 hashing satisfy CNSA 2.0.", fix: "None.", tech: "Rule QRA-SYM-001 · TLS_AES_256_GCM_SHA384." }
+      ]
+    },
+    "www.marriott.com": {
+      title: "marriott.com",
+      kind: "Live Public Website · Hybrid Post-Quantum Edge",
+      isSandbox: false,
+      plainSummaryFed: "Strong posture: marriott.com already negotiates hybrid post-quantum key exchange at its CDN edge (97/100 Controllable Today), with an important advisory note to verify the internal CDN-to-Origin leg.",
+      plainSummaryCnsa: "marriott.com's edge hybrid uses ML-KEM-768 rather than CNSA 2.0's Category 5 ML-KEM-1024.",
+      techDetail: "Observed TLSv1.3 + Hybrid X25519MLKEM768 at CDN Edge · Rule QRA-NET-001 Split-TLS Origin Check.",
+      findingsFed: [
+        { status: "Ready", layer: "Key exchange", title: "Hybrid Post-Quantum Key Exchange Active (X25519MLKEM768)", plain: "Protects guest web sessions today against Harvest-Now-Decrypt-Later capture.", fix: "Keep hybrid ML-KEM-768 enabled.", tech: "Rule QRA-KEX-001 · Group 0x11EC X25519MLKEM768 (RFC 10024)." },
+        { status: "Note", layer: "Network", title: "Verify Internal CDN-to-Origin Leg (Split-TLS)", plain: "Public scan proves the CDN front door is quantum-protected, but cannot see the private link from the CDN back to Marriott's origin servers.", fix: "Confirm origin mTLS leg also enables hybrid ML-KEM.", tech: "Rule QRA-NET-001 · Split-TLS Leg-2 boundary notice." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Public X.509 Certificate Uses Classical CA Signature", plain: "Waiting on public browser/CA root ecosystem transition.", fix: "Track public CA PQC issuance.", tech: "Rule QRA-CERT-001 · Classical CA chain." },
+        { status: "Ready", layer: "Symmetric", title: "AES-256-GCM Bulk Cipher Active", plain: "Strong symmetric encryption active.", fix: "None.", tech: "Rule QRA-SYM-001 · AES-256-GCM." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Key exchange", title: "ML-KEM-768 Hybrid Does Not Meet CNSA 2.0 ML-KEM-1024 Floor", plain: "NIST PQC is not automatically CNSA 2.0: CNSA 2.0 mandates Category 5 ML-KEM-1024.", fix: "Configure ML-KEM-1024 for NSS workloads.", tech: "Rule QRA-KEX-001 · CNSSP 15 Category 5 requirement." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Requires ML-DSA-87 Certificate Chain", plain: "Classical X.509 signatures are disallowed under CNSA 2.0 after 2031.", fix: "Migrate NSS PKI to ML-DSA-87.", tech: "Rule QRA-CERT-001." },
+        { status: "Ready", layer: "Symmetric", title: "AES-256-GCM Compliant", plain: "Meets CNSA 2.0 symmetric requirement.", fix: "None.", tech: "Rule QRA-SYM-001." }
+      ]
+    },
+    "www.qedynamics.io": {
+      title: "qedynamics.io",
+      kind: "Live Public Website · QED Corporate Domain",
+      isSandbox: false,
+      plainSummaryFed: "qedynamics.io serves clean modern HTTPS/TLS 1.3; turning on hybrid ML-KEM key exchange at the edge lifts controllable readiness into the 90s.",
+      plainSummaryCnsa: "Requires ML-KEM-1024 and AES-256-GCM enforcement when compared against NSA CNSA 2.0.",
+      techDetail: "Observed TLSv1.3 · Modern HTTPS Edge · Zero legacy SSL/TLS 1.0.",
+      findingsFed: [
+        { status: "Ready", layer: "Protocols", title: "TLS 1.3 Enforced on Corporate Edge", plain: "Modern transport encryption active.", fix: "Maintain TLS 1.3.", tech: "Rule QRA-PROTO-003." },
+        { status: "Note", layer: "Key exchange", title: "Turn On Cloudflare / Edge Post-Quantum Hybrid Key Exchange", plain: "One toggle adds X25519MLKEM768 hybrid protection.", fix: "Enable PQ key agreement in edge settings.", tech: "Rule QRA-KEX-001 · 0x11EC." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Public CA Certificate Awaits PQC Browser Roots", plain: "Standard public CA dependency.", fix: "Monitor automated CA renewal.", tech: "Rule QRA-CERT-001." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Key exchange", title: "ML-KEM-1024 Not Negotiated", plain: "CNSA 2.0 requires Category 5 ML-KEM-1024.", fix: "Enable ML-KEM-1024 for NSS traffic.", tech: "Rule QRA-KEX-001." },
+        { status: "Depends on a supplier", layer: "Certificates", title: "Requires ML-DSA-87 Signatures", plain: "Classical CA signature.", fix: "Track PQC PKI.", tech: "Rule QRA-CERT-001." }
+      ]
+    },
+    "sim-sap-erp": {
+      title: "Global Airline SAP S/4HANA ERP (Simulated Lab)",
+      kind: "SIMULATED DEMO SANDBOX · ERP + Keystore + SFTP",
+      isSandbox: true,
+      plainSummaryFed: "Simulated Deep ERP Lab: Shows investors what happens when QRA inspects inside an enterprise—catching an outdated TLS 1.2 RSA-2048 SAP Web Dispatcher, a legacy ssh-rsa batch SFTP key, and an SAP kernel supplier dependency alongside strong AES-256 HANA database encryption.",
+      plainSummaryCnsa: "Simulated SAP S/4HANA environment registers 3 critical CNSA 2.0 gaps across SAP Web Dispatcher, RFC SNC certificates, and SFTP host keys.",
+      techDetail: "SIMULATED DEMO SANDBOX · SAP STRUST PSE + HANA KMS + SFTP Host Keys · 0 client secrets ingested.",
+      findingsFed: [
+        { status: "Gap", layer: "Key exchange", title: "SAP Web Dispatcher Uses TLS 1.2 Without Post-Quantum Key Exchange", plain: "ERP financial and booking traffic between branches can be recorded today and decrypted later.", fix: "Upgrade SAP Web Dispatcher CommonCryptoLib to TLS 1.3 + hybrid ML-KEM.", tech: "Rule QRA-KEX-001 · SAP STRUST TLS 1.2 RSA-2048/ECDHE." },
+        { status: "Gap", layer: "SSH", title: "Batch Payroll/Settlement SFTP Uses Deprecated ssh-rsa (2048-bit)", plain: "Automated nightly bank settlement transfers rely on quantum-vulnerable RSA-2048 SSH keys.", fix: "Rotate SFTP host/client keys and upgrade OpenSSH to sntrup761 / mlkem768x25519-sha256.", tech: "Rule QRA-SSH-001 · ssh-rsa 2048-bit host key metadata." },
+        { status: "Depends on a supplier", layer: "ERP Kernel", title: "SAP S/4HANA Internal SNC Waiting on Vendor PQC Patch", plain: "Internal SAP RFC links depend on SAP's CommonCryptoLib FIPS 203/204 release schedule.", fix: "Track SAP Security Notes and isolate ERP subnet behind PQC VPN.", tech: "Rule QRA-HOST-001 · Vendor kernel dependency." },
+        { status: "Ready", layer: "Database KMS", title: "SAP HANA Volume Encryption Uses AES-256-XTS in HSM", plain: "Data at rest inside SAP HANA is already protected with 256-bit AES backed by an HSM.", fix: "Maintain HSM key rotation.", tech: "Rule QRA-CLOUD-001 · AES-256-XTS HSM-backed." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Key exchange", title: "SAP Ingress & RFC Lack ML-KEM-1024", plain: "Fails CNSSP 15 Category 5 key establishment.", fix: "Wrap SAP enclave in RFC 9370 ML-KEM-1024 IPsec.", tech: "Rule QRA-KEX-001." },
+        { status: "Gap", layer: "SSH", title: "Legacy ssh-rsa Fails CNSA 2.0", plain: "Requires post-quantum SSH key exchange and ML-DSA-87 authentication.", fix: "Replace ssh-rsa immediately.", tech: "Rule QRA-SSH-001." },
+        { status: "Ready", layer: "Database KMS", title: "HANA AES-256 Meets CNSA 2.0 At-Rest Strength", plain: "256-bit AES satisfies CNSA 2.0 symmetric rule.", fix: "None.", tech: "Rule QRA-SYM-001." }
+      ]
+    },
+    "sim-oracle-hosp": {
+      title: "Global Hotel Chain Oracle Hospitality ERP (Simulated Lab)",
+      kind: "SIMULATED DEMO SANDBOX · Oracle Fusion + POS Vault + VPN",
+      isSandbox: true,
+      plainSummaryFed: "Simulated Hospitality ERP Lab: Highlights a classic property-network blind spot—property-to-HQ IPsec VPN tunnels still using Diffie-Hellman Group 14 (DH-2048) and an Oracle Wallet RSA-2048 key wrapping guest loyalty archives.",
+      plainSummaryCnsa: "Fails CNSA 2.0 on DH-2048 IPsec trunks and RSA-2048 Oracle Wallet wrapping keys.",
+      techDetail: "SIMULATED DEMO SANDBOX · Oracle PKCS#12 Wallet Metadata + IKEv2 VPN Config.",
+      findingsFed: [
+        { status: "Gap", layer: "VPN / Network", title: "Property-to-HQ IPsec VPN Uses Classical DH-2048", plain: "Encrypted guest passport and loyalty sync traffic across hotel properties is vulnerable to Harvest-Now-Decrypt-Later.", fix: "Enable IKEv2 RFC 9370 hybrid ML-KEM additional key exchange on firewall trunks.", tech: "Rule QRA-IKE-001 · IKEv2 Group 14 (2048-bit MODP)." },
+        { status: "Gap", layer: "Keystore", title: "Oracle Auto-Login Wallet Uses RSA-2048 Master Wrapping Key", plain: "Master key wrapping guest token archives uses quantum-breakable RSA-2048.", fix: "Migrate TDE master key custody to Cloud KMS / HSM with AES-256-KW and PQC envelope plan.", tech: "Rule QRA-FILE-002 · PKCS#12 ewallet.p12 metadata only (zero private key bytes read)." },
+        { status: "Ready", layer: "Symmetric", title: "Cardholder Token Vault Uses AES-256-GCM", plain: "Meets PCI DSS 4.0.1 and post-quantum symmetric strength.", fix: "None.", tech: "Rule QRA-SYM-001 · AES-256-GCM." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "VPN / Network", title: "IKEv2 Must Use ML-KEM-1024 + AES-256 + SHA-384/512", plain: "DH-2048 fails CNSSP 15.", fix: "Upgrade to RFC 9370 ML-KEM-1024.", tech: "Rule QRA-IKE-001." },
+        { status: "Gap", layer: "Keystore", title: "RSA-2048 Wallet Key Disallowed Under CNSA 2.0", plain: "Requires Category 5 PQC / AES-256 key wrapping.", fix: "Re-key in FIPS 140-3 Level 3 HSM.", tech: "Rule QRA-FILE-002." }
+      ]
+    },
+    "sim-govcon-vpc": {
+      title: "Defense Subcontractor — Salesforce + AWS VPC + BMC (Simulated Lab)",
+      kind: "SIMULATED DEMO SANDBOX · Dual-Yardstick GovCon Showcase",
+      isSandbox: true,
+      plainSummaryFed: "The ultimate Dual-Yardstick demo for Defense Subcontractors: passes the Federal Civilian Benchmark on its AWS load balancer (X25519MLKEM768), yet reveals TWO critical CNSSP 15 / CNSA 2.0 blockers—non-updatable server BMC silicon ROM (must be phased out by 31 Dec 2030!) and ML-KEM-768 instead of ML-KEM-1024.",
+      plainSummaryCnsa: "CRITICAL GOVCON ALERT: 2 hard CNSSP 15 blockers detected ahead of 1 Jan 2027 new acquisitions and 31 Dec 2030 non-updatable hardware phase-out—AWS ALB uses ML-KEM-768 (needs ML-KEM-1024) and rack BMCs have fixed RSA-2048 boot ROM.",
+      techDetail: "SIMULATED DEMO SANDBOX · AWS KMS + Salesforce MyDomain + DMTF Redfish SPDM BMC.",
+      findingsFed: [
+        { status: "Ready", layer: "Cloud Edge", title: "AWS Load Balancer Negotiates X25519MLKEM768 Hybrid TLS 1.3", plain: "Passes Federal Civilian Benchmark (EO 14412 / OMB M-26-15).", fix: "Note: if contract flows down NSA CNSA 2.0, upgrade parameter set to ML-KEM-1024.", tech: "Rule QRA-KEX-001 · AWS-LC X25519MLKEM768." },
+        { status: "Gap", layer: "Firmware / BMC", title: "Server Rack BMC Uses Fixed Classical RSA-2048 Silicon Root of Trust", plain: "Hardware boot chip cannot verify post-quantum LMS/XMSS firmware signatures.", fix: "Require SPDM 1.2+ and NIST SP 800-208 LMS/XMSS or ML-DSA-87 silicon RoT on all 2027+ server purchases.", tech: "Rule QRA-BMC-001 · Redfish ComponentIntegrity RSA-2048 (Updateable=false)." },
+        { status: "Depends on a supplier", layer: "CRM SaaS", title: "Salesforce Shield BYOK Tenant Waiting on Vendor PQC Key Wrap", plain: "Custom MyDomain HTTPS is live, while internal tenant BYOK wrapping depends on Salesforce roadmap.", fix: "Maintain annual BYOK rotation and request vendor CBOM attestation.", tech: "Rule QRA-CLOUD-001 · SaaS supplier boundary." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Cloud Edge", title: "X25519MLKEM768 Fails CNSSP 15 (Requires ML-KEM-1024)", plain: "NIST PQC Level 3 is not CNSA 2.0 compliant—defense NSS contracts require Category 5 ML-KEM-1024.", fix: "Switch NSS enclave termination to ML-KEM-1024.", tech: "Rule QRA-KEX-001 · CNSSP 15 Annex C." },
+        { status: "Gap", layer: "Firmware / BMC", title: "Fixed-ROM Classical BMC Must Be Replaced by 31 Dec 2030 (CNSSP 15 Gate 2)", plain: "Non-updatable RSA-2048 hardware boot ROM violates CNSSP 15 1 Jan 2027 acquisition & 31 Dec 2030 removal gates.", fix: "Procure single-tree 256-bit LMS/XMSS or ML-DSA-87 hardware RoT.", tech: "Rule QRA-BMC-001 · CNSSP 15 (Dec 2024 / Mar 2025) & NIST SP 800-208." },
+        { status: "Depends on a supplier", layer: "CRM SaaS", title: "Multi-Tenant CRM Not NIAP PCL / CNSA 2.0 Validated", plain: "Keep NSS data segregated from commercial SaaS.", fix: "Enforce NSS enclave boundary.", tech: "NIAP Policy Letter #33." }
+      ]
+    },
+    "sim-clinic-ehr": {
+      title: "Regional Specialty Medical Clinic EHR & Imaging (Simulated Lab)",
+      kind: "SIMULATED DEMO SANDBOX · Healthcare SMB / Clinic Profile",
+      isSandbox: true,
+      plainSummaryFed: "Built for Doctors & Clinic Owners (No CTO Required): Patient records must stay private for 25+ years (Mosca X=25y), so your clinic's outdated HL7 lab VPN (DH-2048) needs an immediate upgrade from your IT vendor, while your patient portal TLS 1.3 is healthy.",
+      plainSummaryCnsa: "Assessed against CNSA 2.0 upper-bound reference: PACS imaging archive uses AES-128 and lab VPN uses DH-2048.",
+      techDetail: "SIMULATED DEMO SANDBOX · FHIR Portal + HL7v2 Lab VPN + PACS Archive · HIPAA 45 CFR 164.312.",
+      findingsFed: [
+        { status: "Gap", layer: "Lab VPN", title: "Clinic-to-Lab HL7 VPN Uses Outdated Diffie-Hellman (DH-2048)", plain: "Patient lab results sent over the internet can be captured today and unlocked later—violating lifetime medical privacy.", fix: "Ask your managed IT / firewall vendor to turn on TLS 1.3 or IKEv2 post-quantum hybrid mode.", tech: "Rule QRA-IKE-001 · Mosca X(25y)+Y(3y)=28y > Z(9y) · Overdue by 19y." },
+        { status: "Depends on a supplier", layer: "EHR Portal", title: "Cloud EHR Patient Portal Certificate Managed by EHR Vendor", plain: "Your EHR vendor manages the portal certificate.", fix: "Send our 1-Page Executive PDF to your EHR account rep requesting their 2027 PQC roadmap.", tech: "Rule QRA-CERT-001 · Vendor-managed TLS." },
+        { status: "Ready", layer: "Imaging", title: "X-Ray / PACS Storage Encrypted at Rest (AES-128-GCM)", plain: "Meets HIPAA encryption guidance under the Federal Benchmark.", fix: "Upgrade to AES-256 on next storage refresh.", tech: "Rule QRA-SYM-001 · AES-128 accepted under Federal Benchmark." }
+      ],
+      findingsCnsa: [
+        { status: "Gap", layer: "Imaging", title: "PACS AES-128 Does Not Meet CNSA 2.0 AES-256 Standard", plain: "Reference check only (private clinics are not bound by NSA policy).", fix: "Select AES-256 on next PACS upgrade.", tech: "Rule QRA-SYM-001." },
+        { status: "Gap", layer: "Lab VPN", title: "DH-2048 VPN Fails Post-Quantum Key Exchange", plain: "Requires post-quantum key establishment.", fix: "Upgrade firewall firmware.", tech: "Rule QRA-IKE-001." }
+      ]
+    }
+  };
+
+  const SECTORS = {
+    finance: { x: "12", y: "3", z: "9", crit: "20", ys: "federal" },
+    healthcare: { x: "25", y: "3", z: "9", crit: "30", ys: "federal" },
+    insurance: { x: "12", y: "3", z: "9", crit: "20", ys: "federal" },
+    telecom: { x: "12", y: "5", z: "9", crit: "20", ys: "federal" },
+    retail: { x: "7", y: "3", z: "9", crit: "20", ys: "federal" },
+    military: { x: "25", y: "5", z: "4", crit: "30", ys: "cnsa20" }
+  };
+
+  let activeKey = "boardwalkglobal.net";
+  let activeYardstick = "federal";
+  let activeFindingFilter = "ALL";
+  let lastPdfMode = "exec";
+
+  function currentProfile() {
+    if (PROFILES[activeKey]) return PROFILES[activeKey];
+    return {
+      title: activeKey,
+      kind: "Live DNS / Edge Domain Check",
+      isSandbox: false,
+      plainSummaryFed: activeKey + " was checked via read-only DNS/HTTPS edge metadata. Enable TLS 1.3 + hybrid X25519MLKEM768 key exchange on your public ingress and run the local QRA binary for deep internal ERP/cloud inspection.",
+      plainSummaryCnsa: activeKey + " assessed against NSA CNSA 2.0 reference parameters (ML-KEM-1024, ML-DSA-87, AES-256).",
+      techDetail: "Read-only public domain edge check · Zero secret ingestion.",
+      findingsFed: PROFILES["www.qedynamics.io"].findingsFed,
+      findingsCnsa: PROFILES["www.qedynamics.io"].findingsCnsa
+    };
+  }
+
+  function activeFindings() {
+    const p = currentProfile();
+    return activeYardstick === "cnsa20" ? p.findingsCnsa : p.findingsFed;
+  }
+
+  function computeScores(list) {
+    let gap = 0, sup = 0, note = 0, ready = 0;
+    list.forEach(f => {
+      if (f.status === "Gap") gap++;
+      else if (f.status === "Depends on a supplier") sup++;
+      else if (f.status === "Note") note++;
+      else ready++;
+    });
+    const total = Math.max(1, list.length);
+    const raw = Math.round(((ready * 100) + (note * 82) + (sup * 68) + (gap * 18)) / total);
+    const ctrlTotal = Math.max(1, total - sup);
+    const ctrl = Math.min(100, Math.round(((ready * 100) + (note * 86) + (gap * 20)) / ctrlTotal));
+    const score = Math.max(5, Math.min(100, raw));
+    const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
+    return { gap, sup, note, ready, score, ctrl, grade };
+  }
+
+  function computeMoscaAndUrgency(gapCount) {
+    const g = id => parseInt(document.getElementById(id).value || "0", 10);
+    const x = g("q1-x"), y = g("q2-y"), z = Math.max(1, g("q3-z"));
+    const sum = x + y;
+    const overlap = sum - z;
+    const moscaPts = overlap > 0 ? Math.min(35, 15 + overlap * 2) : Math.max(4, 12 + overlap * 2);
+    const qPts = Math.round((g("q4-crit") + g("q5-stack") + g("q6-cbom") + g("q7-saas") + g("q8-exp") + g("q9-hw")) * 0.55);
+    const gapBoost = Math.min(20, gapCount * 8);
+    const urgency = Math.max(8, Math.min(100, moscaPts + qPts + gapBoost - 18));
+    return { x, y, z, sum, overlap, urgency };
+  }
+
+  function statusBadgeHTML(st) {
+    if (st === "Gap") return '<span class="status-badge b-gap">&#9632; Action Needed (Gap)</span>';
+    if (st === "Depends on a supplier") return '<span class="status-badge b-supplier">&#9650; Depends on a supplier</span>';
+    if (st === "Note") return '<span class="status-badge b-note">&#9670; Advisory Note</span>';
+    return '<span class="status-badge b-ready">&#9679; Ready</span>';
+  }
+
+  function renderAll() {
+    const p = currentProfile();
+    const list = activeFindings();
+    const sc = computeScores(list);
+    const mo = computeMoscaAndUrgency(sc.gap);
+
+    document.getElementById("hero-target-title").textContent = p.title;
+    document.getElementById("target-scope-tag").textContent = p.kind;
+    document.getElementById("active-mode-badge").textContent = p.isSandbox
+      ? "◆ SIMULATED DEMO SANDBOX · Safe Investor Demo Data"
+      : "◆ Live Read-Only TLS Check · Zero Secret Ingestion";
+
+    document.getElementById("hero-plain-verdict").textContent =
+      activeYardstick === "cnsa20" ? p.plainSummaryCnsa : p.plainSummaryFed;
+    document.getElementById("hero-tech-detail").textContent = p.techDetail;
+
+    const card = document.getElementById("stoplight-card");
+    const pill = document.getElementById("stoplight-pill");
+    card.classList.remove("st-warn", "st-gap");
+    if (sc.gap >= 2) {
+      card.classList.add("st-gap");
+      pill.innerHTML = "&#9632; IMMEDIATE ACTION NEEDED";
+      pill.style.color = "var(--gap-ink)";
+    } else if (sc.gap === 1 || sc.sup >= 1) {
+      card.classList.add("st-warn");
+      pill.innerHTML = sc.gap === 1 ? "&#9650; 1 FIX NEEDED · GOOD BASELINE" : "&#9679; STRONG BASELINE · VENDOR WATCH";
+      pill.style.color = "var(--warn-ink)";
+    } else {
+      pill.innerHTML = "&#9679; READY TODAY";
+      pill.style.color = "var(--ready-ink)";
+    }
+
+    document.getElementById("val-readiness").textContent = sc.score + " / 100";
+    document.getElementById("val-grade").textContent = "Grade " + sc.grade;
+    document.getElementById("val-controllable").textContent = sc.ctrl + " / 100";
+    document.getElementById("val-mosca-urgency").textContent = mo.urgency + " / 100";
+    document.getElementById("val-mosca-tag").textContent = mo.sum > mo.z
+      ? "X+Y=" + mo.sum + "y > Z=" + mo.z + "y (Act Now)"
+      : "X+Y=" + mo.sum + "y <= Z=" + mo.z + "y";
+
+    document.getElementById("cnt-gap").textContent = String(sc.gap);
+    document.getElementById("cnt-supplier").textContent = String(sc.sup);
+    document.getElementById("cnt-note").textContent = String(sc.note);
+    document.getElementById("cnt-ready").textContent = String(sc.ready);
+
+    document.getElementById("framing-footnote").textContent = activeYardstick === "cnsa20"
+      ? "Assessed against NSA CNSA 2.0 (CNSSP 15 Dec 2024 / Mar 2025 binds National Security Systems; shown as upper-bound benchmark for commercial entities). Not a certification."
+      : "Assessed against the Federal Benchmark (EO 14412, OMB M-26-15, NIST FIPS 203–205). Commercial evaluations are records of assessment, never a compliance certification.";
+
+    document.getElementById("qram-mosca-equation").textContent =
+      "X(" + mo.x + "y) + Y(" + mo.y + "y) = " + mo.sum + "y " + (mo.sum > mo.z ? ">" : "<=") + " Z(" + mo.z + "y)";
+    document.getElementById("qram-urgency-readout").textContent =
+      "Quantifiable Risk Urgency: " + mo.urgency + " / 100 (" + (mo.sum > mo.z ? "In Harvest-Now Window" : "Within Safe Margin") + ")";
+
+    // Findings list
+    const filtered = activeFindingFilter === "ALL" ? list : list.filter(f => f.status === activeFindingFilter);
+    const fBox = document.getElementById("findings-container");
+    fBox.innerHTML = (filtered.length ? filtered : list).map(f => (
+      '<div class="finding-card">' +
+        '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">' +
+          '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">' +
+            statusBadgeHTML(f.status) +
+            '<span class="mono" style="color:var(--ink-muted)">' + f.layer + '</span>' +
+          '</div>' +
+          '<button type="button" class="btn-outline" data-reply-item="' + f.title.replace(/"/g, "&quot;") + '" style="min-height:36px;padding:0 12px;font-size:13.5px">&#8617; Reply</button>' +
+        '</div>' +
+        '<strong style="display:block;font-size:17px;color:var(--ink-bright);margin-bottom:4px">' + f.title + '</strong>' +
+        '<p style="margin:0 0 8px;color:var(--ink-body)">' + f.plain + '</p>' +
+        '<div style="padding:10px 12px;border-radius:9px;background:var(--bg-page);font-size:14.5px"><strong>What to do:</strong> ' + f.fix + '</div>' +
+        '<div class="tech-only mono" style="margin-top:8px;color:var(--ink-muted)">' + f.tech + '</div>' +
+      '</div>'
+    )).join("");
+
+    // CBOM JSON preview
+    const cbomObj = {
+      bomFormat: "CycloneDX",
+      specVersion: "1.7",
+      version: 1,
+      metadata: {
+        timestamp: "2026-11-26T00:00:00Z",
+        component: { name: p.title, type: "application" },
+        properties: [
+          { name: "qed:qra:yardstick", value: activeYardstick === "cnsa20" ? "NSA-CNSA-2.0" : "Federal-Benchmark" },
+          { name: "qed:qra:readinessScore", value: String(sc.score) },
+          { name: "qed:qra:moscaUrgency", value: String(mo.urgency) },
+          { name: "qed:qra:simulatedSandbox", value: String(p.isSandbox) }
+        ]
+      },
+      components: list.map((f, idx) => ({
+        type: "cryptographic-asset",
+        "bom-ref": "asset-" + (idx + 1),
+        name: f.title,
+        properties: [
+          { name: "qed:qra:layer", value: f.layer },
+          { name: "qed:qra:status", value: f.status }
+        ]
+      }))
+    };
+    document.getElementById("cbom-preview-box").textContent = JSON.stringify(cbomObj, null, 2);
+  }
+
+  function switchTab(tabId) {
+    document.querySelectorAll(".nav-tab").forEach(b => {
+      const on = b.getAttribute("data-tab") === tabId;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.querySelectorAll(".tab-view").forEach(v => {
+      v.classList.toggle("active", v.id === "view-" + tabId);
+    });
+  }
+
+  document.querySelectorAll(".nav-tab").forEach(b => {
+    b.addEventListener("click", () => switchTab(b.getAttribute("data-tab")));
+  });
+
+  document.querySelectorAll("[data-aud]").forEach(b => {
+    b.addEventListener("click", () => {
+      const mode = b.getAttribute("data-aud");
+      document.body.classList.toggle("mode-technical", mode === "technical");
+      document.querySelectorAll("[data-aud]").forEach(x => {
+        const on = x === b;
+        x.classList.toggle("active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-ys]").forEach(b => {
+    b.addEventListener("click", () => {
+      activeYardstick = b.getAttribute("data-ys");
+      document.querySelectorAll("[data-ys]").forEach(x => {
+        const on = x === b;
+        x.classList.toggle("active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(b => {
+    b.addEventListener("click", () => {
+      activeKey = b.getAttribute("data-preset");
+      document.getElementById("domain-input").value = PROFILES[activeKey] ? PROFILES[activeKey].title : activeKey;
+      document.querySelectorAll("[data-preset]").forEach(x => x.classList.toggle("is-active", x === b));
+      activeFindingFilter = "ALL";
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll("[data-sector]").forEach(b => {
+    b.addEventListener("click", () => {
+      const sec = SECTORS[b.getAttribute("data-sector")];
+      if (!sec) return;
+      document.getElementById("q1-x").value = sec.x;
+      document.getElementById("q2-y").value = sec.y;
+      document.getElementById("q3-z").value = sec.z;
+      document.getElementById("q4-crit").value = sec.crit;
+      activeYardstick = sec.ys;
+      document.querySelectorAll("[data-ys]").forEach(x => {
+        const on = x.getAttribute("data-ys") === activeYardstick;
+        x.classList.toggle("active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderAll();
+    });
+  });
+
+  document.getElementById("scan-form").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const raw = (document.getElementById("domain-input").value || "").trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+    if (!raw) return;
+    const matchKey = Object.keys(PROFILES).find(k => k === raw.toLowerCase() || k === "www." + raw.toLowerCase() || PROFILES[k].title.toLowerCase() === raw.toLowerCase());
+    activeKey = matchKey || raw.toLowerCase();
+    renderAll();
+    switchTab("overview");
+  });
+
+  // Clickable KPI cards -> jump straight to filtered findings!
+  document.querySelectorAll("[data-jump-filter]").forEach(card => {
+    card.addEventListener("click", () => {
+      activeFindingFilter = card.getAttribute("data-jump-filter");
+      document.querySelectorAll("[data-f-filter]").forEach(p => {
+        p.classList.toggle("is-active", p.getAttribute("data-f-filter") === activeFindingFilter);
+      });
+      renderAll();
+      switchTab("findings");
+    });
+  });
+
+  document.querySelectorAll("[data-f-filter]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeFindingFilter = btn.getAttribute("data-f-filter");
+      document.querySelectorAll("[data-f-filter]").forEach(p => p.classList.toggle("is-active", p === btn));
+      renderAll();
+    });
+  });
+
+  document.querySelectorAll("#qram-form-grid select").forEach(s => {
+    s.addEventListener("change", renderAll);
+  });
+
+  // Smooth Female Voice Helper (Blocks all male/robotic voices)
+  function speakFemale(text) {
+    if (!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const BLOCKED = /fred|albert|ralph|bruce|junior|daniel|alex|aaron|arthur|gordon|guy|david|mark|james|christopher|eric|ryan|thomas|oliver/i;
+    const PREF = /Ava|Zoe|Samantha|Allison|Nicky|Victoria|Aria|Jenny|Sonia|Google US English|Google UK English Female|Female/i;
+    const all = (window.speechSynthesis.getVoices() || []).filter(v => /^en/i.test(v.lang) && !BLOCKED.test(v.name));
+    const chosen = all.find(v => PREF.test(v.name)) || all[0];
+    const u = new SpeechSynthesisUtterance(text);
+    if (chosen) u.voice = chosen;
+    u.rate = 1.0; u.pitch = 1.04;
+    window.speechSynthesis.speak(u);
+  }
+
+  document.getElementById("btn-hero-listen").addEventListener("click", () => {
+    const p = currentProfile();
+    const sc = computeScores(activeFindings());
+    speakFemale("Assessment summary for " + p.title + ". Readiness score " + sc.score + " out of 100, grade " + sc.grade + ". " + (activeYardstick === "cnsa20" ? p.plainSummaryCnsa : p.plainSummaryFed));
+  });
+
+  // Light-dismiss fallback for Safari on both dialogs
+  ["pdf-preview-modal", "reply-modal"].forEach(id => {
+    const dlg = document.getElementById(id);
+    if (dlg && !("closedBy" in HTMLDialogElement.prototype)) {
+      dlg.addEventListener("click", event => {
+        if (event.target !== dlg) return;
+        const r = dlg.getBoundingClientRect();
+        if (event.clientY < r.top || event.clientY > r.top + r.height || event.clientX < r.left || event.clientX > r.left + r.width) {
+          dlg.close();
+        }
+      });
+    }
+  });
+
+  // Segmented %PDF-1.4 Generator (1-Page Exec, Fix-Only, Full CBOM, Completion Certificate)
+  function buildSegmentedPdfBytes(mode) {
+    const p = currentProfile();
+    const list = activeFindings();
+    const sc = computeScores(list);
+    const mo = computeMoscaAndUrgency(sc.gap);
+    const ysName = activeYardstick === "cnsa20" ? "NSA CNSA 2.0" : "Federal Benchmark";
+    const escP = s => String(s || "").replace(/[^\x20-\x7E]/g, " ").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+
+    const lines = [];
+    const titleMap = {
+      exec: "1-PAGE EXECUTIVE QUANTUM READINESS SUMMARY",
+      fix: "ACTIONABLE REMEDIATION FIX SHEET (JUST WHAT TO FIX)",
+      full: "COMPLETE TECHNICAL & CBOM QUANTUM READINESS REPORT",
+      cert: "CERTIFICATE OF ASSESSMENT COMPLETION (NOT A CERTIFICATION)"
+    };
+    lines.push("QUANTUMEDGE DYNAMICS INC. - " + (titleMap[mode] || titleMap.exec));
+    lines.push("Target: " + p.title + " | Mode: " + p.kind);
+    lines.push("Yardstick: " + ysName + " | Readiness: " + sc.score + "/100 (Grade " + sc.grade + ") | Controllable Today: " + sc.ctrl + "/100");
+    lines.push("Mosca Inequality: X(" + mo.x + "y) + Y(" + mo.y + "y) = " + mo.sum + "y vs Z(" + mo.z + "y) | Weighted Urgency: " + mo.urgency + "/100");
+    lines.push("--------------------------------------------------------------------------------");
+
+    if (mode === "cert") {
+      lines.push("RECORD OF POINT-IN-TIME CRYPTOGRAPHIC ASSESSMENT COMPLETION");
+      lines.push("This document records that QuantumEdge Dynamics QRA deterministically assessed observable");
+      lines.push("cryptographic metadata for " + p.title + " with zero secret key ingestion.");
+      lines.push("Legal Notice: Record of technical assessment only - NOT an accreditation or compliance certification.");
+    } else if (mode === "fix") {
+      const actionable = list.filter(f => f.status !== "Ready");
+      (actionable.length ? actionable : list).forEach((f, i) => {
+        lines.push((i + 1) + ". [" + f.status.toUpperCase() + " - " + f.layer + "] " + f.title);
+        lines.push("   Action: " + f.fix.slice(0, 95));
+      });
+    } else if (mode === "exec") {
+      lines.push("Bottom Line: " + (activeYardstick === "cnsa20" ? p.plainSummaryCnsa : p.plainSummaryFed).slice(0, 105));
+      list.slice(0, 4).forEach((f, i) => {
+        lines.push((i + 1) + ". [" + f.status + "] " + f.title + " -> " + f.fix.slice(0, 68));
+      });
+      lines.push("Notice: Commercial targets are assessed against the federal benchmark (not a certification).");
+    } else {
+      lines.push("Quantum Physics Note: Shor's algorithm breaks RSA/ECDSA/ECDH in polynomial time (NIST Level 0);");
+      lines.push("Grover's algorithm imposes O(2^(k/2)) quadratic speedup (AES-256 preserves NIST Level 5).");
+      list.forEach((f, i) => {
+        lines.push((i + 1) + ". [" + f.status + " | " + f.layer + "] " + f.title);
+        lines.push("   Fix: " + f.fix.slice(0, 92));
+        lines.push("   Evidence: " + f.tech.slice(0, 92));
+      });
+    }
+
+    let stream = "BT\n/F1 11 Tf\n44 748 Td\n15 TL\n";
+    lines.slice(0, 44).forEach((ln, idx) => {
+      stream += (idx === 0 ? "" : "T* ") + "(" + escP(ln.slice(0, 96)) + ") Tj\n";
+    });
+    stream += "ET\n";
+
+    const objs = [
+      "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+      "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n",
+      "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n",
+      "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
+      "5 0 obj << /Length " + stream.length + " >>\nstream\n" + stream + "endstream\nendobj\n"
+    ];
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+    objs.forEach(o => { offsets.push(pdf.length); pdf += o; });
+    const xrefPos = pdf.length;
+    pdf += "xref\n0 " + (objs.length + 1) + "\n0000000000 65535 f \n";
+    for (let i = 1; i < offsets.length; i++) {
+      pdf += String(offsets[i]).padStart(10, "0") + " 00000 n \n";
+    }
+    pdf += "trailer << /Size " + (objs.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xrefPos + "\n%%EOF\n";
+    return new TextEncoder().encode(pdf);
+  }
+
+  function openSegmentedModal(mode) {
+    lastPdfMode = mode;
+    const p = currentProfile();
+    const list = activeFindings();
+    const sc = computeScores(list);
+    const mo = computeMoscaAndUrgency(sc.gap);
+    const titles = {
+      exec: "1-Page Executive Summary — " + p.title,
+      fix: "Remediation Fix Sheet (Just What to Fix) — " + p.title,
+      full: "Complete Technical & CBOM Assessment — " + p.title,
+      cert: "Certificate of Assessment Completion — " + p.title
+    };
+    document.getElementById("pdf-modal-title").textContent = titles[mode] || titles.exec;
+    const rows = mode === "fix" ? list.filter(f => f.status !== "Ready") : list;
+    document.getElementById("pdf-modal-content").innerHTML =
+      '<div style="padding:20px;border:1px solid var(--border-soft);border-radius:14px;background:var(--bg-page)">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--cobalt-deep)">QUANTUMEDGE DYNAMICS INC. · DETERMINISTIC QRA RECORD</div>' +
+        '<h3 style="margin:6px 0;font-size:22px;color:var(--ink-bright)">' + titles[mode] + '</h3>' +
+        '<p style="margin:0 0 12px;font-size:15px"><strong>Readiness:</strong> ' + sc.score + '/100 (Grade ' + sc.grade + ') · <strong>Controllable Today:</strong> ' + sc.ctrl + '/100 · <strong>Mosca Urgency:</strong> ' + mo.urgency + '/100 (X=' + mo.x + 'y + Y=' + mo.y + 'y vs Z=' + mo.z + 'y)</p>' +
+        (mode === "cert"
+          ? '<p style="font-size:15.5px">This Certificate of Assessment Completion confirms a read-only cryptographic metadata assessment of <strong>' + p.title + '</strong> with zero private key ingestion. <em>Legal Notice: Record of technical assessment only—never a compliance certification.</em></p>'
+          : rows.map(f => '<div style="padding:12px;margin-top:8px;background:#FFFFFF;border-radius:10px;border:1px solid var(--border-soft)"><strong>[' + f.status + ' · ' + f.layer + '] ' + f.title + '</strong><div style="margin-top:4px;font-size:14.5px">Fix: ' + f.fix + '</div>' + (mode === "full" ? '<div class="mono" style="margin-top:4px;color:var(--ink-muted)">' + f.tech + '</div>' : '') + '</div>').join("")) +
+      '</div>';
+    document.getElementById("pdf-preview-modal").showModal();
+  }
+
+  document.getElementById("btn-hero-exec-pdf").addEventListener("click", () => openSegmentedModal("exec"));
+  document.querySelectorAll("[data-pdf-mode]").forEach(btn => {
+    btn.addEventListener("click", () => openSegmentedModal(btn.getAttribute("data-pdf-mode")));
+  });
+  document.getElementById("btn-modal-close").addEventListener("click", () => document.getElementById("pdf-preview-modal").close());
+  document.getElementById("btn-modal-print").addEventListener("click", () => window.print());
+  document.getElementById("btn-modal-dl-pdf").addEventListener("click", () => {
+    const bytes = buildSegmentedPdfBytes(lastPdfMode);
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "qed-qra-" + lastPdfMode + "-report.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  document.getElementById("btn-dl-cbom-json").addEventListener("click", () => {
+    const txt = document.getElementById("cbom-preview-box").textContent || "{}";
+    const blob = new Blob([txt], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "qed-qra-cbom-1.7.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  // Reply / Dictate Composer
+  const replyModal = document.getElementById("reply-modal");
+  let activeQuote = "";
+  function openReply(quote) {
+    activeQuote = quote;
+    document.getElementById("reply-quote-box").textContent = "> " + quote;
+    document.getElementById("reply-textarea").value = "";
+    document.getElementById("reply-status").textContent = "";
+    replyModal.showModal();
+  }
+  document.getElementById("btn-hero-reply").addEventListener("click", () => {
+    const p = currentProfile();
+    const sc = computeScores(activeFindings());
+    openReply("Team MVP Review — " + p.title + " (" + sc.score + "/100 Grade " + sc.grade + ")");
+  });
+  document.addEventListener("click", ev => {
+    const rb = ev.target.closest("[data-reply-item]");
+    if (rb) openReply("Finding Review — " + currentProfile().title + ": " + rb.getAttribute("data-reply-item"));
+  });
+  document.getElementById("btn-reply-close").addEventListener("click", () => replyModal.close());
+  document.getElementById("btn-copy-reply").addEventListener("click", async () => {
+    const body = document.getElementById("reply-textarea").value.trim();
+    const out = "> " + activeQuote + (body ? "\n\n" + body : "");
+    try {
+      await navigator.clipboard.writeText(out);
+      document.getElementById("reply-status").textContent = "Copied with quoted context!";
+    } catch (_e) {
+      document.getElementById("reply-status").textContent = "Ready to copy";
+    }
+  });
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const dictBtn = document.getElementById("btn-dictate-reply");
+  if (SR && dictBtn) {
+    let rec = null, on = false;
+    dictBtn.addEventListener("click", () => {
+      if (on && rec) { rec.stop(); return; }
+      rec = new SR(); rec.lang = "en-US";
+      rec.onstart = () => { on = true; dictBtn.textContent = "Stop Mic"; };
+      rec.onend = rec.onerror = () => { on = false; dictBtn.textContent = "Dictate Mic"; };
+      rec.onresult = ev => {
+        const t = Array.from(ev.results).map(r => r[0].transcript).join(" ");
+        const ta = document.getElementById("reply-textarea");
+        ta.value = (ta.value ? ta.value + " " : "") + t;
+      };
+      rec.start();
+    });
+  } else if (dictBtn) { dictBtn.hidden = true; }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
